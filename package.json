@@ -1,0 +1,14 @@
+{
+  "name": "question-generator",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter @veda/backend dev",
+    "dev:worker": "pnpm --filter @veda/worker dev",
+    "dev:all": "pnpm --parallel --filter @veda/backend --filter @veda/worker run dev",
+    "build": "pnpm --filter @veda/shared build && pnpm --filter @veda/backend build && pnpm --filter @veda/worker build"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  }
+}

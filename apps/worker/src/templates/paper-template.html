@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Question Paper</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Times New Roman", Times, serif;
+        line-height: 1.6;
+        padding: 40px;
+      }
+      .paper {
+        max-width: 800px;
+        margin: 0 auto;
+        background: black;
+        color: white;
+        padding: 60px 40px;
+        border: 1px solid #ddd;
+      }
+      .question {
+        margin-bottom: 28px;
+      }
+      .question p {
+        margin-bottom: 4px;
+      }
+      .difficulty {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        background: black;
+        color: white;
+        text-transform: capitalize;
+        margin-left: 8px;
+      }
+      .marks {
+        font-weight: 600;
+        margin-left: 8px;
+      }
+      h1 {
+        font-size: 1.8rem;
+        margin-bottom: 4px;
+      }
+      h2 {
+        font-size: 1.3rem;
+        border-bottom: 2px solid black;
+        padding-bottom: 4px;
+        margin-bottom: 16px;
+      }
+      .student-info {
+        display: flex;
+        gap: 40px;
+        margin-bottom: 32px;
+        font-size: 0.9rem;
+      }
+      .student-info div {
+        flex: 1;
+      }
+      .student-info span {
+        font-weight: bold;
+      }
+      .instruction {
+        font-style: italic;
+        color: #6b7280;
+        margin-bottom: 24px;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="paper">
+      <div style="text-align: center; margin-bottom: 40px">
+        <h1>{{title}}</h1>
+        <p style="color: #4b5563">
+          Total Marks: {{totalMarks}} | Duration: {{duration}}
+        </p>
+      </div>
+
+      <div class="student-info">
+        <div><span>Name:</span> ________________________</div>
+        <div><span>Roll Number:</span> ________________________</div>
+        <div><span>Date:</span> ________________________</div>
+      </div>
+
+      {{#each sections}}
+      <section style="margin-bottom: 32px">
+        <h2>{{this.title}}</h2>
+        <p class="instruction">{{this.instruction}}</p>
+        {{#each this.questions}}
+        <div class="question">
+          <p>
+            <strong>{{inc @index}}.</strong> {{this.text}}
+            <span class="difficulty">{{this.difficulty}}</span>
+            <span class="marks">[{{this.marks}} marks]</span>
+          </p>
+        </div>
+        {{/each}}
+      </section>
+      {{/each}}
+    </div>
+  </body>
+</html>
