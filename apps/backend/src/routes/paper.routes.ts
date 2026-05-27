@@ -3,6 +3,23 @@ import { GeneratedPaperModel } from "../models/generated-paper.model";
 import { addPdfJob } from "../queues/pdf.queue";
 
 const router: Router = Router();
+
+// Serve PDF directly from DB (used in production)
+router.get("/:paperId/pdf", async (req: Request, res: Response) => {
+  try {
+    const paper = await GeneratedPaperModel.findById(req.params.paperId).select(
+      "+pdfData",
+    );
+    if (!paper || !paper.pdfData) {
+      return res.status(404).json({ error: "PDF not found" });
+    }
+    res.contentType("application/pdf");
+    res.send(paper.pdfData);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to retrieve PDF" });
+  }
+});
+
 // Get paper by assignmentId (for preview)
 router.get("/:assignmentId", async (req: Request, res: Response) => {
   try {

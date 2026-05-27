@@ -7,6 +7,7 @@ export interface IGeneratedPaper extends GeneratedPaper, Document {
   createdAt: Date;
   updatedAt: Date;
   pdfUrl?: string;
+  pdfData?: Buffer;
   institutionName?: string;
 }
 
@@ -57,6 +58,7 @@ const generatedPaperSchema = new Schema<IGeneratedPaper>(
     totalMarks: { type: Number },
     duration: { type: String },
     pdfUrl: { type: String, default: null },
+    pdfData: { type: Schema.Types.Buffer, default: null },
   },
   { timestamps: true },
 );

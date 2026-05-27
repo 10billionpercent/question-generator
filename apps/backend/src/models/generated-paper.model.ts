@@ -8,6 +8,7 @@ export interface IGeneratedPaper extends GeneratedPaper, Document {
   updatedAt: Date;
   pdfUrl?: string;
   institutionName?: string;
+  pdfData?: Buffer;
 }
 
 const questionSchema = new Schema(
@@ -19,7 +20,7 @@ const questionSchema = new Schema(
       required: true,
     },
     marks: { type: Number, required: true },
-    answerHint: { type: String, required: false }, 
+    answerHint: { type: String, required: false },
   },
   { _id: false },
 );
@@ -57,6 +58,7 @@ const generatedPaperSchema = new Schema<IGeneratedPaper>(
     totalMarks: { type: Number },
     duration: { type: String },
     pdfUrl: { type: String, default: null },
+    pdfData: { type: Schema.Types.Buffer, default: null },
   },
   { timestamps: true },
 );
