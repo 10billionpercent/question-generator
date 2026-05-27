@@ -3,152 +3,212 @@
   <head>
     <meta charset="UTF-8" />
     <title>{{subject}} - {{classLevel}} Question Paper</title>
+
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
       body {
         font-family: "Times New Roman", Times, serif;
         background: white;
-        padding: 40px;
-        line-height: 1.5;
-      }
-      .paper {
-        max-width: 800px;
-        margin: 0 auto;
-        background: white;
         color: black;
+
+        padding: 28px 34px;
+
+        font-size: 15px;
+        line-height: 1.15;
       }
+
+      .paper {
+        width: 100%;
+      }
+
+      /* HEADER */
+
       .school {
-        font-size: 1rem;
-        margin-bottom: 8px;
-      }
-      .subject-class {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 16px;
-      }
-      .time,
-      .marks {
-        font-size: 1rem;
-        margin-bottom: 4px;
-      }
-      .compulsory-note {
-        font-style: italic;
-        margin-bottom: 20px;
-      }
-      .student-info {
-        margin-bottom: 30px;
-        font-size: 1rem;
-      }
-      .student-info span {
-        font-weight: bold;
-      }
-      .student-info .inline-field {
-        display: inline-block;
-        margin-right: 30px;
-      }
-      .section {
-        margin-bottom: 35px;
-      }
-      .section-title {
-        font-size: 1.3rem;
-        font-weight: bold;
-        margin-top: 20px;
-        margin-bottom: 5px;
-      }
-      .section-type {
-        font-weight: 600;
-        margin-bottom: 5px;
-      }
-      .section-instruction {
-        font-style: italic;
-        margin-bottom: 15px;
-        font-size: 0.9rem;
-      }
-      .question {
-        margin-bottom: 16px;
-      }
-      .question-text {
-        margin-left: 20px;
-      }
-      .marks {
-        font-weight: normal;
-        margin-left: 6px;
-      }
-      .end-text {
-        margin-top: 30px;
+        font-size: 22px;
         font-weight: bold;
         text-align: center;
-      }
-      .answer-key {
-        margin-top: 40px;
-        border-top: 1px solid #000;
-        padding-top: 20px;
-      }
-      .answer-key h2 {
-        font-size: 1.2rem;
-        margin-bottom: 16px;
-      }
-      .answer-key p {
         margin-bottom: 8px;
       }
+
+      .subject-class {
+        font-size: 18px;
+        text-align: center;
+        line-height: 1.3;
+        margin-bottom: 20px;
+      }
+
+      .time-marks {
+        font-size: 15px;
+        margin-bottom: 30px;
+      }
+
+      /* STUDENT INFO */
+
+      .student-info {
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      .student-info div {
+        margin-bottom: 20px;
+        margin-top: 20px;
+      }
+
+      /* SECTION */
+
+      .section {
+        margin-bottom: 20px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 3px;
+        text-align: center;
+      }
+
+      .section-type {
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+
+      .section-instruction {
+        font-size: 15px;
+        margin-bottom: 12px;
+      }
+
+      /* QUESTIONS */
+
+      .question {
+        margin-bottom: 14px;
+      }
+
+      .question-number {
+        display: inline;
+      }
+
+      .question-content {
+        display: inline;
+      }
+
+      .difficulty {
+        font-weight: normal;
+      }
+
+      .marks {
+        white-space: nowrap;
+      }
+
+      /* END TEXT */
+
+      .end-text {
+        text-align: left;
+        font-weight: bold;
+        margin-top: 18px;
+        margin-bottom: 22px;
+      }
+
+      /* ANSWER KEY */
+
+      .answer-key h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .answer-key p {
+        margin-bottom: 10px;
+        line-height: 1.3;
+      }
+
+      /* BETTER PDF FLOW */
+
+      p,
+      div {
+        orphans: 3;
+        widows: 3;
+      }
+
       @media print {
         body {
-          padding: 0;
-        }
-        .paper {
-          box-shadow: none;
+          padding: 28px 34px;
         }
       }
     </style>
   </head>
+
   <body>
     <div class="paper">
-      <!-- Optional school name – you can remove or make dynamic -->
+      <!-- HEADER -->
+
       <div class="school">Delhi Public School, Sector-4, Bokaro</div>
 
       <div class="subject-class">
-        Subject: {{subject}} Class: {{classLevel}}
+        Subject: {{subject}}<br />
+        Class: {{classLevel}}
       </div>
-      <div class="time">Time Allowed: {{timeAllowed}}</div>
-      <div class="marks">Maximum Marks: {{maxMarks}}</div>
+
+      <div class="time-marks">
+        Time Allowed: {{timeAllowed}} &nbsp;&nbsp;&nbsp; Maximum Marks:
+        {{maxMarks}}
+      </div>
+
       <div class="compulsory-note">{{compulsoryNote}}</div>
 
+      <!-- STUDENT INFO -->
+
       <div class="student-info">
-        <span>Name:</span> ________________________
-        <span style="margin-left: 30px">Roll Number:</span>
-        ________________________
-        <span style="margin-left: 30px">Class:</span> {{classLevel}} Section:
-        ________
+        <div>Name: ______________________</div>
+
+        <div>Roll Number: ________________</div>
+
+        <div>Class: {{classLevel}} Section: __________</div>
       </div>
+
+      <!-- SECTIONS -->
 
       {{#each sections}}
       <div class="section">
         <div class="section-title">{{this.title}}</div>
+
         <div class="section-type">{{this.type}}</div>
+
         <div class="section-instruction">{{this.instruction}}</div>
 
         {{#each this.questions}}
         <div class="question">
-          <strong>{{inc @index}}.</strong>
-          <span class="question-text">
-            [{{this.difficulty}}] {{this.text}}
-            <span class="marks">[{{this.marks}} Marks]</span>
+          <span class="question-number"> {{inc @index}}. </span>
+
+          <span class="question-content">
+            <span class="difficulty"> [{{this.difficulty}}] </span>
+
+            {{this.text}}
+
+            <span class="marks"> [{{this.marks}} Marks] </span>
           </span>
         </div>
         {{/each}}
       </div>
       {{/each}}
 
+      <!-- END -->
+
       <div class="end-text">End of Question Paper</div>
+
+      <!-- ANSWER KEY -->
 
       <div class="answer-key">
         <h2>Answer Key:</h2>
+
         {{#each answersList}}
-        <p><strong>{{inc @index}}.</strong> {{this}}</p>
+        <p>
+          <strong>{{inc @index}}.</strong>
+          {{this}}
+        </p>
         {{/each}}
       </div>
     </div>
