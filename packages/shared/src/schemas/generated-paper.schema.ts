@@ -32,6 +32,7 @@ export const generatedPaperSchema = z.object({
   totalMarks: z.number().optional(),
   duration: z.string().optional(),
   pdfUrl: z.string().optional(),
+  institutionName: z.string().optional(),
 });
 
 export type GeneratedPaper = z.infer<typeof generatedPaperSchema>;

@@ -28,6 +28,7 @@ export async function generatePdf(paper: any): Promise<Buffer> {
 
   // Prepare all data for the template
   const html = template({
+    institutionName: paper.institutionName || "Institution Name",
     subject: paper.subject || "General",
     classLevel: paper.classLevel || "",
     timeAllowed: paper.timeAllowed || "1 hour",

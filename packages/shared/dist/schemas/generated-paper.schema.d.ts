@@ -132,6 +132,7 @@ export declare const generatedPaperSchema: z.ZodObject<{
     totalMarks: z.ZodOptional<z.ZodNumber>;
     duration: z.ZodOptional<z.ZodString>;
     pdfUrl: z.ZodOptional<z.ZodString>;
+    institutionName: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     classLevel: string;
     subject: string;
@@ -154,6 +155,7 @@ export declare const generatedPaperSchema: z.ZodObject<{
         rollNumber: string;
         classSection: string;
     };
+    institutionName?: string | undefined;
     totalMarks?: number | undefined;
     duration?: string | undefined;
     pdfUrl?: string | undefined;
@@ -174,6 +176,7 @@ export declare const generatedPaperSchema: z.ZodObject<{
             answerHint?: string | undefined;
         }[];
     }[];
+    institutionName?: string | undefined;
     studentInfo?: {
         name?: string | undefined;
         rollNumber?: string | undefined;

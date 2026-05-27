@@ -7,6 +7,7 @@ export interface IGeneratedPaper extends GeneratedPaper, Document {
   createdAt: Date;
   updatedAt: Date;
   pdfUrl?: string;
+  institutionName?: string;
 }
 
 const questionSchema = new Schema(
@@ -18,7 +19,7 @@ const questionSchema = new Schema(
       required: true,
     },
     marks: { type: Number, required: true },
-    answerHint: { type: String, required: false }, // ✅ ADD THIS
+    answerHint: { type: String, required: false }, 
   },
   { _id: false },
 );
@@ -41,6 +42,7 @@ const generatedPaperSchema = new Schema<IGeneratedPaper>(
       required: true,
     },
     jobId: { type: String, required: true },
+    institutionName: { type: String, default: null },
     subject: { type: String, required: true },
     classLevel: { type: String, required: true },
     timeAllowed: { type: String, required: true },

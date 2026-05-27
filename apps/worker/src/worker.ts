@@ -32,11 +32,17 @@ const worker = new Worker<GenerationJobPayload>(
         },
       );
 
+      // Attach institution name from the job payload (if any)
+      const paperWithInstitution = {
+        ...generatedPaper,
+        institutionName: job.data.institutionName || undefined,
+      };
+
       // Save to MongoDB
       const paperDoc = await saveGeneratedPaper(
         job.data.assignmentId,
         job.id!,
-        generatedPaper,
+        paperWithInstitution,
       );
 
       // Update assignment status

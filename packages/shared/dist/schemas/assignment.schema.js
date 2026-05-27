@@ -11,6 +11,7 @@ exports.questionTypeEnum = zod_1.z.enum([
     "fill-blanks",
 ]);
 exports.assignmentFormSchema = zod_1.z.object({
+    institutionName: zod_1.z.string().optional(),
     title: zod_1.z.string().min(1, "Title required"),
     studyMaterialUrl: zod_1.z.string().url().optional(),
     dueDate: zod_1.z.string().datetime().optional(),

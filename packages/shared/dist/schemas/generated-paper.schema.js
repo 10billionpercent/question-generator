@@ -31,5 +31,6 @@ exports.generatedPaperSchema = zod_1.z.object({
     totalMarks: zod_1.z.number().optional(),
     duration: zod_1.z.string().optional(),
     pdfUrl: zod_1.z.string().optional(),
+    institutionName: zod_1.z.string().optional(),
 });
 //# sourceMappingURL=generated-paper.schema.js.map

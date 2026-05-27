@@ -13,6 +13,7 @@ export const questionTypeEnum = z.enum([
 export type QuestionType = z.infer<typeof questionTypeEnum>;
 
 export const assignmentFormSchema = z.object({
+  institutionName: z.string().optional(),
   title: z.string().min(1, "Title required"),
   studyMaterialUrl: z.string().url().optional(),
   dueDate: z.string().datetime().optional(),

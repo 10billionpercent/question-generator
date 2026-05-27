@@ -4,6 +4,7 @@ export type Difficulty = z.infer<typeof difficultyEnum>;
 export declare const questionTypeEnum: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>;
 export type QuestionType = z.infer<typeof questionTypeEnum>;
 export declare const assignmentFormSchema: z.ZodObject<{
+    institutionName: z.ZodOptional<z.ZodString>;
     title: z.ZodString;
     studyMaterialUrl: z.ZodOptional<z.ZodString>;
     dueDate: z.ZodOptional<z.ZodString>;
@@ -18,6 +19,7 @@ export declare const assignmentFormSchema: z.ZodObject<{
     questionTypes: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[];
     totalQuestions: number;
     marksPerQuestion: number;
+    institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
@@ -28,6 +30,7 @@ export declare const assignmentFormSchema: z.ZodObject<{
     questionTypes: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[];
     totalQuestions: number;
     marksPerQuestion: number;
+    institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
@@ -36,6 +39,7 @@ export declare const assignmentFormSchema: z.ZodObject<{
 }>;
 export type AssignmentForm = z.infer<typeof assignmentFormSchema>;
 export declare const generationJobPayloadSchema: z.ZodObject<{
+    institutionName: z.ZodOptional<z.ZodString>;
     title: z.ZodString;
     studyMaterialUrl: z.ZodOptional<z.ZodString>;
     dueDate: z.ZodOptional<z.ZodString>;
@@ -53,6 +57,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     questionTypes: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[];
     totalQuestions: number;
     marksPerQuestion: number;
+    institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
@@ -65,6 +70,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     questionTypes: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[];
     totalQuestions: number;
     marksPerQuestion: number;
+    institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
