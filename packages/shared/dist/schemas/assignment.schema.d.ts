@@ -12,6 +12,7 @@ export declare const assignmentFormSchema: z.ZodObject<{
     marksPerQuestion: z.ZodNumber;
     additionalInstructions: z.ZodOptional<z.ZodString>;
     difficultyPreference: z.ZodOptional<z.ZodEnum<["easy", "medium", "hard"]>>;
+    classLevel: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     title: string;
     questionTypes: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[];
@@ -21,6 +22,7 @@ export declare const assignmentFormSchema: z.ZodObject<{
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
     difficultyPreference?: "easy" | "medium" | "hard" | undefined;
+    classLevel?: string | undefined;
 }, {
     title: string;
     questionTypes: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[];
@@ -30,6 +32,7 @@ export declare const assignmentFormSchema: z.ZodObject<{
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
     difficultyPreference?: "easy" | "medium" | "hard" | undefined;
+    classLevel?: string | undefined;
 }>;
 export type AssignmentForm = z.infer<typeof assignmentFormSchema>;
 export declare const generationJobPayloadSchema: z.ZodObject<{
@@ -41,6 +44,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     marksPerQuestion: z.ZodNumber;
     additionalInstructions: z.ZodOptional<z.ZodString>;
     difficultyPreference: z.ZodOptional<z.ZodEnum<["easy", "medium", "hard"]>>;
+    classLevel: z.ZodOptional<z.ZodString>;
 } & {
     assignmentId: z.ZodOptional<z.ZodString>;
     uploadedContent: z.ZodOptional<z.ZodString>;
@@ -53,6 +57,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
     difficultyPreference?: "easy" | "medium" | "hard" | undefined;
+    classLevel?: string | undefined;
     assignmentId?: string | undefined;
     uploadedContent?: string | undefined;
 }, {
@@ -64,6 +69,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     dueDate?: string | undefined;
     additionalInstructions?: string | undefined;
     difficultyPreference?: "easy" | "medium" | "hard" | undefined;
+    classLevel?: string | undefined;
     assignmentId?: string | undefined;
     uploadedContent?: string | undefined;
 }>;

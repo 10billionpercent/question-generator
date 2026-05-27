@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <title>{{subject}} - {{classLevel}} Question Paper</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
       * {
         margin: 0;
@@ -12,7 +21,7 @@
       }
 
       body {
-        font-family: "Times New Roman", Times, serif;
+        font-family: "Inter", sans-serif;
         background: white;
         color: black;
 
@@ -45,6 +54,8 @@
       .time-marks {
         font-size: 15px;
         margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
       }
 
       /* STUDENT INFO */
@@ -153,10 +164,10 @@
       </div>
 
       <div class="time-marks">
-        Time Allowed: {{timeAllowed}} &nbsp;&nbsp;&nbsp; Maximum Marks:
-        {{maxMarks}}
-      </div>
+        <span> Time Allowed: {{timeAllowed}} </span>
 
+        <span> Maximum Marks: {{maxMarks}} </span>
+      </div>
       <div class="compulsory-note">{{compulsoryNote}}</div>
 
       <!-- STUDENT INFO -->

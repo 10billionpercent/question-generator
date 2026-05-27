@@ -133,8 +133,8 @@ export declare const generatedPaperSchema: z.ZodObject<{
     duration: z.ZodOptional<z.ZodString>;
     pdfUrl: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    subject: string;
     classLevel: string;
+    subject: string;
     timeAllowed: string;
     maxMarks: number;
     compulsoryNote: string;
@@ -158,8 +158,8 @@ export declare const generatedPaperSchema: z.ZodObject<{
     duration?: string | undefined;
     pdfUrl?: string | undefined;
 }, {
-    subject: string;
     classLevel: string;
+    subject: string;
     timeAllowed: string;
     maxMarks: number;
     compulsoryNote: string;

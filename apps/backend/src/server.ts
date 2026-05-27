@@ -7,6 +7,7 @@ import { connectDB } from "./db/mongoose";
 import { initSocket } from "./socket";
 import { generationRouter } from "./routes/generation.routes";
 import { paperRouter } from "./routes/paper.routes";
+import { uploadRouter } from "./routes/upload.routes";
 import path from "path";
 
 const app = express();
@@ -21,6 +22,7 @@ app.use("/pdfs", express.static(path.resolve(__dirname, "../../pdfs")));
 
 // Routes
 app.use("/api/generation", generationRouter);
+app.use("/api/generation", uploadRouter); 
 app.use("/api/papers", paperRouter);
 
 // Health check

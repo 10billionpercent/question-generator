@@ -43,7 +43,13 @@ export async function generatePdf(paper: any): Promise<Buffer> {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.setContent(html, { waitUntil: "networkidle" });
+  await page.setContent(html);
+
+  await page.waitForLoadState("networkidle");
+
+  await page.waitForTimeout(500);
+
+  await page.emulateMedia({ media: "print" });
 
   const pdfBuffer = await page.pdf({
     format: "A4",

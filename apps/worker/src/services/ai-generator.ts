@@ -9,8 +9,8 @@ import {
 const genAI = new GoogleGenerativeAI(config.geminiApiKey);
 
 const modelFallbackChain = [
-  "gemini-2.5-flash",
   "gemini-3.1-flash-lite",
+  "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
   "gemma-4-26b-a4b-it",
   "gemma-4-31b-it",
@@ -42,6 +42,7 @@ function getPrompt(payload: GenerationJobPayload): string {
     difficultyPreference,
     additionalInstructions,
     uploadedContent,
+    classLevel,
   } = payload;
 
   const difficultyMap: Record<string, string[]> = {
@@ -55,7 +56,8 @@ function getPrompt(payload: GenerationJobPayload): string {
 You are an expert exam paper creator. Generate a question paper that exactly matches the format below.
 
 **Topic / Subject:** ${title}
-**Target Class:** Infer from title (e.g., "Class 5") or use "General"
+${uploadedContent ? `The questions MUST be based solely on the following study material:\n"${uploadedContent}"\n` : ""}
+**Target Class:** ${classLevel} else "General"
 **Total Questions:** ${totalQuestions}
 **Marks per Question:** ${marksPerQuestion}
 **Difficulty Preference:** ${difficultyPreference || "medium"} (choose from ${allowedDifficulties.join(", ")})

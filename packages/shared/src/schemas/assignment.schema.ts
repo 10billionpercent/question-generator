@@ -17,10 +17,11 @@ export const assignmentFormSchema = z.object({
   studyMaterialUrl: z.string().url().optional(),
   dueDate: z.string().datetime().optional(),
   questionTypes: z.array(questionTypeEnum).min(1),
-  totalQuestions: z.number().int().positive(),
-  marksPerQuestion: z.number().int().positive(),
+  totalQuestions: z.coerce.number().int().positive(),
+  marksPerQuestion: z.coerce.number().int().positive(),
   additionalInstructions: z.string().optional(),
   difficultyPreference: difficultyEnum.optional(),
+  classLevel: z.string().optional(),
 });
 export type AssignmentForm = z.infer<typeof assignmentFormSchema>;
 

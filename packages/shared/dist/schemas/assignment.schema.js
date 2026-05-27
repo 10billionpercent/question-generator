@@ -15,10 +15,11 @@ exports.assignmentFormSchema = zod_1.z.object({
     studyMaterialUrl: zod_1.z.string().url().optional(),
     dueDate: zod_1.z.string().datetime().optional(),
     questionTypes: zod_1.z.array(exports.questionTypeEnum).min(1),
-    totalQuestions: zod_1.z.number().int().positive(),
-    marksPerQuestion: zod_1.z.number().int().positive(),
+    totalQuestions: zod_1.z.coerce.number().int().positive(),
+    marksPerQuestion: zod_1.z.coerce.number().int().positive(),
     additionalInstructions: zod_1.z.string().optional(),
     difficultyPreference: exports.difficultyEnum.optional(),
+    classLevel: zod_1.z.string().optional(),
 });
 exports.generationJobPayloadSchema = exports.assignmentFormSchema.extend({
     assignmentId: zod_1.z.string().optional(),
