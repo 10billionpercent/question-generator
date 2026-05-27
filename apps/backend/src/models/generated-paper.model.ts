@@ -14,10 +14,11 @@ const questionSchema = new Schema(
     text: { type: String, required: true },
     difficulty: {
       type: String,
-      enum: ["easy", "medium", "hard"],
+      enum: ["Easy", "Medium", "Difficult"],
       required: true,
     },
     marks: { type: Number, required: true },
+    answerHint: { type: String, required: false }, // ✅ ADD THIS
   },
   { _id: false },
 );
@@ -25,6 +26,7 @@ const questionSchema = new Schema(
 const sectionSchema = new Schema(
   {
     title: { type: String, required: true },
+    type: { type: String, required: true }, // ✅ type field added
     instruction: { type: String, required: true },
     questions: [questionSchema],
   },
@@ -39,14 +41,19 @@ const generatedPaperSchema = new Schema<IGeneratedPaper>(
       required: true,
     },
     jobId: { type: String, required: true },
-    studentInfo: {
-      name: String,
-      rollNumber: String,
-      date: String,
-    },
+    subject: { type: String, required: true },
+    classLevel: { type: String, required: true },
+    timeAllowed: { type: String, required: true },
+    maxMarks: { type: Number, required: true },
+    compulsoryNote: { type: String, required: true },
     sections: [sectionSchema],
-    totalMarks: Number,
-    duration: String,
+    studentInfo: {
+      name: { type: String, default: "" },
+      rollNumber: { type: String, default: "" },
+      classSection: { type: String, default: "" },
+    },
+    totalMarks: { type: Number },
+    duration: { type: String },
     pdfUrl: { type: String, default: null },
   },
   { timestamps: true },

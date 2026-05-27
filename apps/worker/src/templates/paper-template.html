@@ -2,111 +2,155 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Question Paper</title>
+    <title>{{subject}} - {{classLevel}} Question Paper</title>
     <style>
       * {
-        box-sizing: border-box;
         margin: 0;
         padding: 0;
+        box-sizing: border-box;
       }
       body {
         font-family: "Times New Roman", Times, serif;
-        line-height: 1.6;
+        background: white;
         padding: 40px;
+        line-height: 1.5;
       }
       .paper {
         max-width: 800px;
         margin: 0 auto;
-        background: black;
-        color: white;
-        padding: 60px 40px;
-        border: 1px solid #ddd;
+        background: white;
+        color: black;
       }
-      .question {
-        margin-bottom: 28px;
+      .school {
+        font-size: 1rem;
+        margin-bottom: 8px;
       }
-      .question p {
-        margin-bottom: 4px;
-      }
-      .difficulty {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        background: black;
-        color: white;
-        text-transform: capitalize;
-        margin-left: 8px;
-      }
-      .marks {
-        font-weight: 600;
-        margin-left: 8px;
-      }
-      h1 {
-        font-size: 1.8rem;
-        margin-bottom: 4px;
-      }
-      h2 {
-        font-size: 1.3rem;
-        border-bottom: 2px solid black;
-        padding-bottom: 4px;
+      .subject-class {
+        font-size: 1.2rem;
+        font-weight: bold;
         margin-bottom: 16px;
       }
-      .student-info {
-        display: flex;
-        gap: 40px;
-        margin-bottom: 32px;
-        font-size: 0.9rem;
+      .time,
+      .marks {
+        font-size: 1rem;
+        margin-bottom: 4px;
       }
-      .student-info div {
-        flex: 1;
+      .compulsory-note {
+        font-style: italic;
+        margin-bottom: 20px;
+      }
+      .student-info {
+        margin-bottom: 30px;
+        font-size: 1rem;
       }
       .student-info span {
         font-weight: bold;
       }
-      .instruction {
+      .student-info .inline-field {
+        display: inline-block;
+        margin-right: 30px;
+      }
+      .section {
+        margin-bottom: 35px;
+      }
+      .section-title {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-top: 20px;
+        margin-bottom: 5px;
+      }
+      .section-type {
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+      .section-instruction {
         font-style: italic;
-        color: #6b7280;
-        margin-bottom: 24px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+      }
+      .question {
+        margin-bottom: 16px;
+      }
+      .question-text {
+        margin-left: 20px;
+      }
+      .marks {
+        font-weight: normal;
+        margin-left: 6px;
+      }
+      .end-text {
+        margin-top: 30px;
+        font-weight: bold;
+        text-align: center;
+      }
+      .answer-key {
+        margin-top: 40px;
+        border-top: 1px solid #000;
+        padding-top: 20px;
+      }
+      .answer-key h2 {
+        font-size: 1.2rem;
+        margin-bottom: 16px;
+      }
+      .answer-key p {
+        margin-bottom: 8px;
       }
       @media print {
         body {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
+          padding: 0;
+        }
+        .paper {
+          box-shadow: none;
         }
       }
     </style>
   </head>
   <body>
     <div class="paper">
-      <div style="text-align: center; margin-bottom: 40px">
-        <h1>{{title}}</h1>
-        <p style="color: #4b5563">
-          Total Marks: {{totalMarks}} | Duration: {{duration}}
-        </p>
+      <!-- Optional school name – you can remove or make dynamic -->
+      <div class="school">Delhi Public School, Sector-4, Bokaro</div>
+
+      <div class="subject-class">
+        Subject: {{subject}} Class: {{classLevel}}
       </div>
+      <div class="time">Time Allowed: {{timeAllowed}}</div>
+      <div class="marks">Maximum Marks: {{maxMarks}}</div>
+      <div class="compulsory-note">{{compulsoryNote}}</div>
 
       <div class="student-info">
-        <div><span>Name:</span> ________________________</div>
-        <div><span>Roll Number:</span> ________________________</div>
-        <div><span>Date:</span> ________________________</div>
+        <span>Name:</span> ________________________
+        <span style="margin-left: 30px">Roll Number:</span>
+        ________________________
+        <span style="margin-left: 30px">Class:</span> {{classLevel}} Section:
+        ________
       </div>
 
       {{#each sections}}
-      <section style="margin-bottom: 32px">
-        <h2>{{this.title}}</h2>
-        <p class="instruction">{{this.instruction}}</p>
+      <div class="section">
+        <div class="section-title">{{this.title}}</div>
+        <div class="section-type">{{this.type}}</div>
+        <div class="section-instruction">{{this.instruction}}</div>
+
         {{#each this.questions}}
         <div class="question">
-          <p>
-            <strong>{{inc @index}}.</strong> {{this.text}}
-            <span class="difficulty">{{this.difficulty}}</span>
-            <span class="marks">[{{this.marks}} marks]</span>
-          </p>
+          <strong>{{inc @index}}.</strong>
+          <span class="question-text">
+            [{{this.difficulty}}] {{this.text}}
+            <span class="marks">[{{this.marks}} Marks]</span>
+          </span>
         </div>
         {{/each}}
-      </section>
+      </div>
       {{/each}}
+
+      <div class="end-text">End of Question Paper</div>
+
+      <div class="answer-key">
+        <h2>Answer Key:</h2>
+        {{#each answersList}}
+        <p><strong>{{inc @index}}.</strong> {{this}}</p>
+        {{/each}}
+      </div>
     </div>
   </body>
 </html>

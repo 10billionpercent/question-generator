@@ -1,28 +1,37 @@
 import { z } from "zod";
-import { difficultyEnum } from "./assignment.schema";
 
 export const questionSchema = z.object({
   text: z.string(),
-  difficulty: difficultyEnum,
-  marks: z.number().int().positive(),
+  difficulty: z.enum(["Easy", "Medium", "Difficult"]),
+  marks: z.number().positive(),
+  answerHint: z.string().optional(),
 });
-export type Question = z.infer<typeof questionSchema>;
 
 export const sectionSchema = z.object({
   title: z.string(),
+  type: z.string(),
   instruction: z.string(),
   questions: z.array(questionSchema),
 });
-export type Section = z.infer<typeof sectionSchema>;
+
+// Student info structure (just placeholders)
+export const studentInfoSchema = z.object({
+  name: z.string().optional().default(""),
+  rollNumber: z.string().optional().default(""),
+  classSection: z.string().optional().default(""),
+});
 
 export const generatedPaperSchema = z.object({
-  studentInfo: z.object({
-    name: z.string().optional(),
-    rollNumber: z.string().optional(),
-    date: z.string().optional(),
-  }),
+  subject: z.string(),
+  classLevel: z.string(),
+  timeAllowed: z.string(),
+  maxMarks: z.number(),
+  compulsoryNote: z.string(),
   sections: z.array(sectionSchema),
-  totalMarks: z.number().int().positive(),
+  studentInfo: studentInfoSchema.optional().default({}),
+  totalMarks: z.number().optional(),
   duration: z.string().optional(),
+  pdfUrl: z.string().optional(),
 });
+
 export type GeneratedPaper = z.infer<typeof generatedPaperSchema>;

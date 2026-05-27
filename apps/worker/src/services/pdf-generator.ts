@@ -3,7 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import Handlebars from "handlebars";
 
-// Helper for incrementing index in template
+// Helper for incrementing index in template (used for question numbering)
 Handlebars.registerHelper("inc", (value: number) => value + 1);
 
 export async function generatePdf(paper: any): Promise<Buffer> {
@@ -14,11 +14,29 @@ export async function generatePdf(paper: any): Promise<Buffer> {
   const templateSource = await fs.readFile(templatePath, "utf-8");
   const template = Handlebars.compile(templateSource);
 
+  // Build answersList from each question's answerHint
+  const answersList: string[] = [];
+  if (paper.sections && Array.isArray(paper.sections)) {
+    for (const section of paper.sections) {
+      if (section.questions && Array.isArray(section.questions)) {
+        for (const question of section.questions) {
+          answersList.push(question.answerHint || "(Answer not provided)");
+        }
+      }
+    }
+  }
+
+  // Prepare all data for the template
   const html = template({
-    title: paper.title || "Question Paper",
-    totalMarks: paper.totalMarks,
-    duration: paper.duration || "2 hours",
-    sections: paper.sections,
+    subject: paper.subject || "General",
+    classLevel: paper.classLevel || "",
+    timeAllowed: paper.timeAllowed || "1 hour",
+    maxMarks: paper.maxMarks || 0,
+    compulsoryNote:
+      paper.compulsoryNote ||
+      "All questions are compulsory unless stated otherwise.",
+    sections: paper.sections || [],
+    answersList: answersList,
   });
 
   const browser = await chromium.launch({ headless: true });
