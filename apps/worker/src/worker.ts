@@ -2,7 +2,11 @@ import { Worker, Job } from "bullmq";
 import { config } from "./config";
 import { GenerationJobPayload } from "@veda/shared";
 import { generatePaperWithFallback } from "./services/ai-generator";
-import { connectDB, saveGeneratedPaper, updateAssignmentStatus } from "./services/db";
+import {
+  connectDB,
+  saveGeneratedPaper,
+  updateAssignmentStatus,
+} from "./services/db";
 import {
   emitProgress,
   emitCompleted,
@@ -84,11 +88,21 @@ const pdfWorker = new Worker<PdfJobPayload>(
       // Save to project root /pdfs
       const pdfDir = path.resolve(__dirname, "../../../pdfs");
       await fs.mkdir(pdfDir, { recursive: true });
-      const pdfPath = path.join(pdfDir, `${paper._id}.pdf`);
+
+      // Generate a clean, human‑readable filename (subject + date)
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const safeSubject = (paper.subject || "question-paper")
+        .replace(/[^a-zA-Z0-9 ]/g, "")
+        .replace(/\s+/g, "-")
+        .toLowerCase();
+      const pdfFilename = `${safeSubject}-${dateStr}.pdf`;
+
+      const pdfPath = path.join(pdfDir, pdfFilename);
       await fs.writeFile(pdfPath, pdfBuffer);
 
       // Update paper document
-      const pdfUrl = `/pdfs/${paper._id}.pdf`; // relative URL
+      const pdfUrl = `/pdfs/${pdfFilename}`;
       paper.pdfUrl = pdfUrl;
       await paper.save();
 

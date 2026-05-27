@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config";
 import {
   GenerationJobPayload,
@@ -16,17 +16,7 @@ const modelFallbackChain = [
   "gemma-4-31b-it",
 ];
 
-function extractSubjectFromTitle(title: string): string {
-  const match = title.match(/^(React|Next\.js|TypeScript|JavaScript|Node)/i);
-  return match ? match[0] : "Computer Science";
-}
-
-function inferClassLevel(title: string): string {
-  if (title.toLowerCase().includes("advanced")) return "Advanced";
-  if (title.toLowerCase().includes("intermediate")) return "Intermediate";
-  return "Beginner";
-}
-
+// Simple fallback only when the AI doesn't return a value – no regex
 function calculateTime(totalQ: number, marksPerQ: number): string {
   const totalMarks = totalQ * marksPerQ;
   if (totalMarks <= 20) return "45 minutes";
@@ -55,33 +45,38 @@ function getPrompt(payload: GenerationJobPayload): string {
   return `
 You are an expert exam paper creator. Generate a question paper that exactly matches the format below.
 
-**Topic / Subject:** ${title}
-${uploadedContent ? `The questions MUST be based solely on the following study material:\n"${uploadedContent}"\n` : ""}
-**Target Class:** ${classLevel} else "General"
+**User provided title:** "${title}"
+**User provided class level:** ${classLevel || "(not specified)"}
 **Total Questions:** ${totalQuestions}
 **Marks per Question:** ${marksPerQuestion}
 **Difficulty Preference:** ${difficultyPreference || "medium"} (choose from ${allowedDifficulties.join(", ")})
 **Additional Instructions:** ${additionalInstructions || "None"}
-${uploadedContent ? `**Study Material / Content:**\n${uploadedContent}\n` : ""}
+${uploadedContent ? `**Study Material / Content:**\n"${uploadedContent}"\n` : ""}
+
+**IMPORTANT:**
+- If the user's title does not clearly identify a subject (e.g., "Question Paper from Upload", "Test", "Exam"), **analyze the provided study material and generate a concise, meaningful subject** (e.g., "Data Structures", "Ancient Civilizations").
+- If the user's class level is missing or vague, **infer an appropriate class level** from the study material or default to "General".
+- The questions MUST be based on the study material if provided, otherwise on the title.
+- Every question MUST include an "answerHint" – a short answer or key point (1-2 sentences).
 
 Output **only valid JSON** (no markdown, no extra text) following this exact schema:
 
 {
-  "subject": "string (e.g., English)",
-  "classLevel": "string (e.g., 5th)",
+  "subject": "string (e.g., English, React Hooks)",
+  "classLevel": "string (e.g., 5th, BE 6th Sem, General)",
   "timeAllowed": "string (e.g., 45 minutes)",
-  "maxMarks": number (total marks = totalQuestions * marksPerQuestion),
-  "compulsoryNote": "string (usually 'All questions are compulsory unless stated otherwise.')",
+  "maxMarks": number (total marks = ${totalQuestions} * ${marksPerQuestion} = ${totalQuestions * marksPerQuestion}),
+  "compulsoryNote": "string (e.g., 'All questions are compulsory unless stated otherwise.')",
   "sections": [
     {
       "title": "Section A",
       "type": "Short Answer Questions",
-      "instruction": "Attempt all questions. Each question carries X marks",
+      "instruction": "Attempt all questions. Each question carries ${marksPerQuestion} marks",
       "questions": [
         {
           "text": "Question text here",
           "difficulty": "Easy" | "Medium" | "Difficult",
-          "marks": number (must equal marksPerQuestion),
+          "marks": number (must equal ${marksPerQuestion}),
           "answerHint": "brief answer explanation"
         }
       ]
@@ -93,13 +88,11 @@ Output **only valid JSON** (no markdown, no extra text) following this exact sch
 - You may create 1 to 3 sections. Distribute the ${totalQuestions} questions evenly across sections.
 - Each question must have **difficulty** one of: Easy, Medium, Difficult. Use the allowed difficulties: ${allowedDifficulties.join(", ")}.
 - Each question must have **marks** exactly ${marksPerQuestion}.
-- **Every question must include an "answerHint"** – a short answer (1-2 sentences) for the answer key.
-- The **instruction** in each section must include the marks per question (e.g., "Each question carries ${marksPerQuestion} marks").
-- The **type** should describe the question style (e.g., "Short Answer Questions", "Long Answer", "Multiple Choice").
-- The **subject** and **classLevel** should be realistic based on the title. If title is "English - Class 5", extract "English" and "5th".
-- The **timeAllowed** should be reasonable (e.g., 45 minutes for 20 marks, 1 hour for 30 marks).
-- The **compulsoryNote** should be as shown unless additionalInstructions say otherwise.
-- Do NOT include any extra fields. Return ONLY the JSON object.
+- Each question must include an **"answerHint"**.
+- The **instruction** in each section must mention the marks per question (e.g., "Each question carries ${marksPerQuestion} marks").
+- The **type** field should describe the question style (e.g., "Short Answer Questions", "Long Answer", "Multiple Choice").
+- The **timeAllowed** should be reasonable (e.g., 45 minutes for 20 marks).
+- Return ONLY the JSON object, no other text.
 `.trim();
 }
 
@@ -109,8 +102,7 @@ async function tryGenerate(
 ): Promise<GeneratedPaper> {
   const model = genAI.getGenerativeModel({ model: modelName });
   const result = await model.generateContent(prompt);
-  const response = result.response;
-  const text = response.text();
+  const text = result.response.text();
   const jsonText = text.replace(/```json|```/g, "").trim();
   const parsed = JSON.parse(jsonText);
   return generatedPaperSchema.parse(parsed);
@@ -130,10 +122,10 @@ export async function generatePaperWithFallback(
       console.log(`🔧 Trying model: ${model}`);
       const paper = await tryGenerate(model, prompt);
 
-      // Apply defaults for missing metadata
+      // Apply safe defaults only if AI missed these fields (no regex)
       const finalPaper: GeneratedPaper = {
-        subject: paper.subject || extractSubjectFromTitle(payload.title),
-        classLevel: paper.classLevel || inferClassLevel(payload.title),
+        subject: paper.subject || payload.title,
+        classLevel: paper.classLevel || "General",
         timeAllowed:
           paper.timeAllowed ||
           calculateTime(payload.totalQuestions, payload.marksPerQuestion),
