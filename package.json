@@ -6,10 +6,13 @@
     "dev:worker": "pnpm --filter @veda/worker dev",
     "dev:all": "pnpm --parallel --filter @veda/backend --filter @veda/worker run dev",
     "build": "pnpm --filter @veda/shared build && pnpm --filter @veda/backend build && pnpm --filter @veda/worker build",
-    "start": "pnpm --parallel --filter @veda/backend --filter @veda/worker start"
+    "start:backend": "pnpm --filter @veda/backend start",
+    "start:worker": "pnpm --filter @veda/worker start",
+    "start:combined": "concurrently \"pnpm start:backend\" \"pnpm start:worker\""
   },
   "devDependencies": {
     "typescript": "^5.4.0",
-    "@types/node": "^20.11.0"
+    "@types/node": "^20.11.0",
+    "concurrently": "^8.2.0"
   }
 }
