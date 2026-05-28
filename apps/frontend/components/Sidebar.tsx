@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Sparkles } from 'lucide-react';
 
 const navItems = [
   {
@@ -118,34 +119,14 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="sidebar-logo">
           <div className="logo-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-              <path
-                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
+            <img src="/logo.png" alt="VedaAI" />
           </div>
           <span className="logo-text">VedaAI</span>
         </div>
 
         {/* Create Assignment CTA */}
         <Link href="/assignments/create" className="create-btn">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
+          <Sparkles size={20} fill="currentColor" />
           Create Assignment
         </Link>
 
@@ -248,12 +229,18 @@ export default function Sidebar() {
         .logo-icon {
           width: 38px;
           height: 38px;
-          background: var(--color-brand);
           border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          overflow: hidden;
+        }
+
+        .logo-icon img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
         }
 
         .logo-text {
@@ -266,6 +253,7 @@ export default function Sidebar() {
         .create-btn {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
           background: var(--text-primary);
           color: white;

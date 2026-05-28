@@ -7,18 +7,7 @@ export default function MobileHeader() {
         {/* Logo */}
         <div className="mh-logo">
           <div className="mh-logo-icon">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+            <img src="/logo.png" alt="VedaAI" />
           </div>
           <span className="mh-logo-text">VedaAI</span>
         </div>
@@ -97,11 +86,17 @@ export default function MobileHeader() {
         .mh-logo-icon {
           width: 32px;
           height: 32px;
-          background: var(--color-brand);
           border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
+          overflow: hidden;
+        }
+
+        .mh-logo-icon img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
         }
 
         .mh-logo-text {

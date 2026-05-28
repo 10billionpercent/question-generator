@@ -7,6 +7,11 @@ import MobileNav from "@/components/MobileNav";
 export const metadata: Metadata = {
   title: "VedaAI",
   description: "AI Assessment Creator for Teachers",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
