@@ -1,5 +1,6 @@
 {
   "name": "question-generator",
+  "packageManager": "pnpm@10.11.1",
   "private": true,
   "scripts": {
     "dev:backend": "pnpm --filter @veda/backend dev",
