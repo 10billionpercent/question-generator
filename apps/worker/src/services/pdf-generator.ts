@@ -1,10 +1,11 @@
-import { chromium } from "playwright";
+import Handlebars from "handlebars";
 import * as fs from "fs/promises";
 import * as path from "path";
-import Handlebars from "handlebars";
 
-// Helper for incrementing index in template (used for question numbering)
 Handlebars.registerHelper("inc", (value: number) => value + 1);
+
+const BROWSERLESS_API_KEY = process.env.BROWSERLESS_API_KEY || "";
+const BROWSERLESS_URL = `https://production-sfo.browserless.io/pdf?token=${encodeURIComponent(BROWSERLESS_API_KEY)}`;
 
 export async function generatePdf(paper: any): Promise<Buffer> {
   const templatePath = path.resolve(
@@ -15,10 +16,10 @@ export async function generatePdf(paper: any): Promise<Buffer> {
     "templates",
     "paper-template.html",
   );
+
   const templateSource = await fs.readFile(templatePath, "utf-8");
   const template = Handlebars.compile(templateSource);
 
-  // Build answersList from each question's answerHint
   const answersList: string[] = [];
   if (paper.sections && Array.isArray(paper.sections)) {
     for (const section of paper.sections) {
@@ -30,7 +31,6 @@ export async function generatePdf(paper: any): Promise<Buffer> {
     }
   }
 
-  // Prepare all data for the template
   const html = template({
     institutionName: paper.institutionName || "Institution Name",
     subject: paper.subject || "General",
@@ -41,49 +41,38 @@ export async function generatePdf(paper: any): Promise<Buffer> {
       paper.compulsoryNote ||
       "All questions are compulsory unless stated otherwise.",
     sections: paper.sections || [],
-    answersList: answersList,
+    answersList,
   });
 
-  const browser = await chromium.launch({
-    headless: true,
-    args: [
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--no-sandbox",
-      "--single-process",
-      "--disable-software-rasterizer",
-      "--disable-extensions",
-      "--disable-background-timer-throttling",
-      "--disable-renderer-backgrounding",
-      "--disable-backgrounding-occluded-windows",
-      "--memory-pressure-off",
-      "--disable-features=TranslateUI",
-      "--disable-ipc-flooding-protection",
-    ],
-  });
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
-  await page.setContent(html);
-
-  await page.waitForLoadState("networkidle");
-
-  await page.waitForTimeout(500);
-
-  await page.emulateMedia({ media: "print" });
-
-  const pdfBuffer = await page.pdf({
-    format: "A4",
-    printBackground: true,
-    margin: {
-      top: "0",
-      bottom: "0",
-      left: "0",
-      right: "0",
+  const response = await fetch(BROWSERLESS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
     },
-    preferCSSPageSize: true,
+    body: JSON.stringify({
+      html,
+      options: {
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "0mm",
+          bottom: "0mm",
+          left: "0mm",
+          right: "0mm",
+        },
+        preferCSSPageSize: true,
+      },
+    }),
   });
 
-  await browser.close();
-  return Buffer.from(pdfBuffer);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Browserless PDF generation failed: ${response.status} ${errorText}`,
+    );
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
