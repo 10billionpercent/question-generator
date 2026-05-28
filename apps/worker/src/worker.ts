@@ -19,7 +19,6 @@ import { addGenerationJob } from "./queues/generation.queue";
 
 const connection = { url: config.redisUri };
 
-// At the very top of the file, after imports
 process.on("uncaughtException", (err) => {
   console.error("❌ Worker uncaught exception:", err);
   process.exit(1);
@@ -30,16 +29,16 @@ process.on("unhandledRejection", (reason) => {
   process.exit(1);
 });
 
-// Wrap all worker creation in an async function
 async function startWorkers() {
   try {
     console.log("🚀 Starting workers...");
+
     // ========== FILE EXTRACTION WORKER ==========
     interface ExtractionJobPayload {
       assignmentId: string;
       form: GenerationJobPayload;
       file?: {
-        path: string; // only in dev
+        path: string;
         originalName: string;
         mimetype: string;
       };
@@ -50,7 +49,7 @@ async function startWorkers() {
       async (job: Job<ExtractionJobPayload>) => {
         console.log(`📂 Processing extraction job ${job.id}`);
 
-        await emitProgress(job.id!, 5);
+        await emitProgress(job.id!, 5, job.data.assignmentId);
 
         try {
           await connectDB();
@@ -61,7 +60,6 @@ async function startWorkers() {
             (process.env.NODE_ENV || "").trim() === "production";
 
           if (isProduction) {
-            // Production: read file buffer from MongoDB
             const { UploadModel } = await import("./models/upload.model");
             const upload = await UploadModel.findOne({
               assignmentId: new mongoose.Types.ObjectId(assignmentId),
@@ -73,7 +71,6 @@ async function startWorkers() {
               upload.originalName,
             );
           } else {
-            // Development: read from disk (file path provided)
             if (!file) throw new Error("No file provided for extraction");
             uploadedContent = await extractText(
               file.path,
@@ -82,13 +79,13 @@ async function startWorkers() {
             );
           }
 
-          await emitProgress(job.id!, 10);
+          await emitProgress(job.id!, 10, assignmentId);
 
-          // Enqueue the actual generation job
           await addGenerationJob(
             {
               ...form,
               uploadedContent,
+              assignmentId, // ensure assignmentId is in the payload
             },
             job.id!,
           );
@@ -107,7 +104,11 @@ async function startWorkers() {
         } catch (error: any) {
           console.error(`❌ Extraction job ${job.id} failed:`, error);
           await updateAssignmentStatus(job.data.assignmentId, "failed");
-          await emitFailed(job.id!, error.message || "Extraction failed");
+          await emitFailed(
+            job.id!,
+            error.message || "Extraction failed",
+            job.data.assignmentId,
+          );
           throw error;
         }
       },
@@ -120,13 +121,14 @@ async function startWorkers() {
       async (job: Job<GenerationJobPayload>) => {
         console.log(`📥 Processing job ${job.id}`);
 
-        await emitProgress(job.id!, 10);
+        const assignmentId = job.data.assignmentId; // ensure assignmentId is in the payload
+        await emitProgress(job.id!, 10, assignmentId);
 
         try {
           const generatedPaper = await generatePaperWithFallback(
             job.data,
             (progress) => {
-              emitProgress(job.id!, progress);
+              emitProgress(job.id!, progress, assignmentId);
             },
           );
 
@@ -148,13 +150,22 @@ async function startWorkers() {
             paperDoc._id.toString(),
           );
 
-          await emitCompleted(job.id!, paperDoc._id.toString(), generatedPaper);
+          await emitCompleted(
+            job.id!,
+            paperDoc._id.toString(),
+            generatedPaper,
+            assignmentId,
+          );
 
           return { success: true, paperId: paperDoc._id };
         } catch (error: any) {
           console.error(`❌ Job ${job.id} failed:`, error);
           await updateAssignmentStatus(job.data.assignmentId, "failed");
-          await emitFailed(job.id!, error.message || "Generation failed");
+          await emitFailed(
+            job.id!,
+            error.message || "Generation failed",
+            assignmentId,
+          );
           throw error;
         }
       },
@@ -188,17 +199,20 @@ async function startWorkers() {
             (process.env.NODE_ENV || "").trim() === "production";
 
           if (isProduction) {
-            // Store PDF in MongoDB
             paper.pdfData = pdfBuffer;
             paper.pdfUrl = `/api/papers/${paper._id}/pdf`;
             await paper.save();
 
-            await emitCompleted(job.id!, paper._id.toString(), {
-              pdfUrl: paper.pdfUrl,
-            });
+            await emitCompleted(
+              job.id!,
+              paper._id.toString(),
+              {
+                pdfUrl: paper.pdfUrl,
+              },
+              assignmentId,
+            );
             console.log(`✅ PDF stored in MongoDB for paper ${paper._id}`);
           } else {
-            // Local file system (dev)
             const fs = await import("fs/promises");
             const path = await import("path");
 
@@ -220,12 +234,19 @@ async function startWorkers() {
             paper.pdfUrl = pdfUrl;
             await paper.save();
 
-            await emitCompleted(job.id!, paper._id.toString(), { pdfUrl });
+            console.log(`Emitting completion for assignment ${assignmentId}`);
+
+            await emitCompleted(
+              job.id!,
+              paper._id.toString(),
+              { pdfUrl },
+              assignmentId,
+            );
             console.log(`✅ PDF saved: ${pdfPath}`);
           }
         } catch (error: any) {
           console.error("PDF generation failed:", error);
-          await emitFailed(job.id!, error.message);
+          await emitFailed(job.id!, error.message, assignmentId);
           throw error;
         }
       },

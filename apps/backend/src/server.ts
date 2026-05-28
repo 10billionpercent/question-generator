@@ -11,6 +11,7 @@ import { uploadRouter } from "./routes/upload.routes";
 import { authRouter } from "./routes/auth.routes";
 import { optionalAuth } from "./middleware/auth";
 import path from "path";
+import { initRedisSubscriber } from "./socket/redis-subscriber";
 
 const app = express();
 const server = http.createServer(app);
@@ -33,6 +34,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 // Initialize Socket.IO
 const io = initSocket(server);
+initRedisSubscriber();
 
 // Connect to DB and start server
 connectDB()
