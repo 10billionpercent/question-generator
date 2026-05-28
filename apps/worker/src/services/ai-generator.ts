@@ -7,6 +7,7 @@ import {
 } from "@veda/shared";
 
 const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+const modelTimeoutMs = Number(process.env.AI_MODEL_TIMEOUT_MS || 20000);
 
 const modelFallbackChain = [
   "gemini-3.1-flash-lite",
@@ -101,7 +102,18 @@ async function tryGenerate(
   prompt: string,
 ): Promise<GeneratedPaper> {
   const model = genAI.getGenerativeModel({ model: modelName });
-  const result = await model.generateContent(prompt);
+  const result = await Promise.race([
+    model.generateContent(prompt),
+    new Promise<never>((_resolve, reject) => {
+      setTimeout(
+        () =>
+          reject(
+            new Error(`Model ${modelName} timed out after ${modelTimeoutMs}ms`),
+          ),
+        modelTimeoutMs,
+      );
+    }),
+  ]);
   const text = result.response.text();
   const jsonText = text.replace(/```json|```/g, "").trim();
   const parsed = JSON.parse(jsonText);
@@ -113,14 +125,19 @@ export async function generatePaperWithFallback(
   onProgress: (percent: number) => void,
 ): Promise<GeneratedPaper> {
   const prompt = getPrompt(payload);
+  console.log(
+    `AI prompt size: ${prompt.length} chars; uploaded content: ${payload.uploadedContent?.length || 0} chars`,
+  );
   let lastError: Error | undefined;
 
   for (let i = 0; i < modelFallbackChain.length; i++) {
     const model = modelFallbackChain[i];
+    const startedAt = Date.now();
     try {
       onProgress(20 + i * 15);
       console.log(`🔧 Trying model: ${model}`);
       const paper = await tryGenerate(model, prompt);
+      console.log(`Model ${model} succeeded in ${Date.now() - startedAt}ms`);
 
       // Apply safe defaults only if AI missed these fields (no regex)
       const finalPaper: GeneratedPaper = {
@@ -144,7 +161,10 @@ export async function generatePaperWithFallback(
       onProgress(90);
       return finalPaper;
     } catch (err: any) {
-      console.warn(`Model ${model} failed:`, err.message);
+      console.warn(
+        `Model ${model} failed after ${Date.now() - startedAt}ms:`,
+        err.message,
+      );
       lastError = err;
       continue;
     }

@@ -23,13 +23,22 @@ router.get("/mine", requireAuth, async (req: Request, res: Response) => {
 // Serve PDF directly from DB (used in production)
 router.get("/:paperId/pdf", async (req: Request, res: Response) => {
   try {
-    const paper = await GeneratedPaperModel.findById(req.params.paperId).select(
-      "+pdfData",
-    );
+    const paper = await GeneratedPaperModel.findById(req.params.paperId);
     if (!paper || !paper.pdfData) {
       return res.status(404).json({ error: "PDF not found" });
     }
-    res.contentType("application/pdf");
+
+    // Generate a clean filename from the paper metadata
+    const safeSubject = (paper.subject || "question-paper")
+      .replace(/[^a-zA-Z0-9 ]/g, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+    const now = paper.createdAt || new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const filename = `${safeSubject}-${dateStr}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(paper.pdfData);
   } catch (error) {
     res.status(500).json({ error: "Failed to retrieve PDF" });

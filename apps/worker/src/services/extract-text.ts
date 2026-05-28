@@ -1,26 +1,25 @@
 import * as fs from "fs/promises";
 import * as PdfParse from "pdf-parse-new";
 
-interface ExtractableFile {
-  path: string;
-  originalName: string;
-  mimetype: string;
-}
-
 export async function extractText(
-  file?: ExtractableFile,
-): Promise<string | undefined> {
-  if (!file) return undefined;
+  source: string | Buffer,
+  mimetype: string,
+  originalName: string,
+): Promise<string> {
+  // Determine if source is a file path or a buffer
+  let buffer: Buffer;
+  if (typeof source === "string") {
+    buffer = await fs.readFile(source);
+  } else {
+    buffer = source;
+  }
 
-  if (file.mimetype === "application/pdf") {
-    const buffer = await fs.readFile(file.path);
+  if (mimetype === "application/pdf" || originalName.endsWith(".pdf")) {
     const result = await PdfParse.default(buffer);
     return result.text;
+  } else if (mimetype === "text/plain" || originalName.endsWith(".txt")) {
+    return buffer.toString("utf-8");
+  } else {
+    throw new Error("Unsupported file type");
   }
-
-  if (file.mimetype === "text/plain" || file.originalName.endsWith(".txt")) {
-    return fs.readFile(file.path, "utf-8");
-  }
-
-  throw new Error("Unsupported file type. Please upload a PDF or text file.");
 }

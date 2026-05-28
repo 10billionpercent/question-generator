@@ -2,49 +2,67 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { assignmentFormSchema, generationJobPayloadSchema } from "@veda/shared";
 import { AssignmentModel } from "../models/assignment.model";
-import { addExtractionJob } from "../queues/extraction.queue";
+import { UploadModel } from "../models/upload.model";
+import {
+  addExtractionJob,
+  ExtractionJobPayload,
+} from "../queues/extraction.queue";
 import { getIO } from "../socket";
 
 export const createExtractionJob = async (req: Request, res: Response) => {
   try {
     const validatedForm = assignmentFormSchema.parse(req.body);
-
-    // Fallback institution name from authenticated user
     const institutionName =
       validatedForm.institutionName || req.authUser?.institutionName;
-
+    const form = {
+      ...validatedForm,
+      institutionName,
+    };
     const userId = req.authUser?.userId
       ? new mongoose.Types.ObjectId(req.authUser.userId)
       : undefined;
 
-    // Create assignment
     const assignment = await AssignmentModel.create({
-      ...validatedForm,
+      ...form,
       institutionName,
       userId,
       status: "pending",
     });
 
-    // Build job payload
-    const payload = generationJobPayloadSchema.parse({
-      ...validatedForm,
-      institutionName,
-      assignmentId: assignment._id.toString(),
-      userId: userId?.toString(),
-    });
+    const isProduction = (process.env.NODE_ENV || "").trim() === "production";
 
-    // Enqueue extraction job (file path is added automatically by multer)
-    const job = await addExtractionJob({
+    // Build extraction job payload – always contains assignmentId
+    const extractionJobPayload: ExtractionJobPayload = {
       assignmentId: assignment._id.toString(),
-      form: payload,
-      ...(req.file && {
-        file: {
+      form: generationJobPayloadSchema.parse({
+        ...form,
+        assignmentId: assignment._id.toString(),
+        userId: req.authUser?.userId,
+      }),
+    };
+
+    if (req.file) {
+      if (isProduction) {
+        // Production: store file buffer in Upload model for later retrieval
+        await UploadModel.create({
+          assignmentId: assignment._id,
+          fileBuffer: req.file.buffer,
+          mimetype: req.file.mimetype,
+          originalName: req.file.originalname,
+        });
+        // No file info in payload – worker will read from DB
+      } else {
+        // Development: attach file metadata (disk storage)
+        extractionJobPayload.file = {
           path: req.file.path,
           originalName: req.file.originalname,
           mimetype: req.file.mimetype,
-        },
-      }),
-    });
+        };
+      }
+    }
+
+    // Enqueue extraction job
+    const job = await addExtractionJob(extractionJobPayload);
 
     assignment.jobId = job.id;
     assignment.status = "extracting";

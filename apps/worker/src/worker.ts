@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Worker, Job } from "bullmq";
 import { config } from "./config";
 import { GenerationJobPayload } from "@veda/shared";
@@ -18,11 +19,12 @@ import { addGenerationJob } from "./queues/generation.queue";
 
 const connection = { url: config.redisUri };
 
+// ========== FILE EXTRACTION WORKER ==========
 interface ExtractionJobPayload {
   assignmentId: string;
   form: GenerationJobPayload;
   file?: {
-    path: string;
+    path: string; // only in dev
     originalName: string;
     mimetype: string;
   };
@@ -31,25 +33,63 @@ interface ExtractionJobPayload {
 const extractionWorker = new Worker<ExtractionJobPayload>(
   "file-extraction",
   async (job: Job<ExtractionJobPayload>) => {
-    console.log(`Processing extraction job ${job.id}`);
+    console.log(`📂 Processing extraction job ${job.id}`);
 
     await emitProgress(job.id!, 5);
 
     try {
-      const uploadedContent = await extractText(job.data.file);
+      await connectDB();
+
+      const { assignmentId, form, file } = job.data;
+      let uploadedContent: string | undefined;
+      const isProduction = (process.env.NODE_ENV || "").trim() === "production";
+
+      if (isProduction) {
+        // Production: read file buffer from MongoDB
+        const { UploadModel } = await import("./models/upload.model");
+        const upload = await UploadModel.findOne({
+          assignmentId: new mongoose.Types.ObjectId(assignmentId),
+        });
+        if (!upload) throw new Error("Uploaded file not found in database");
+        uploadedContent = await extractText(
+          upload.fileBuffer,
+          upload.mimetype,
+          upload.originalName,
+        );
+      } else {
+        // Development: read from disk (file path provided)
+        if (!file) throw new Error("No file provided for extraction");
+        uploadedContent = await extractText(
+          file.path,
+          file.mimetype,
+          file.originalName,
+        );
+      }
+
       await emitProgress(job.id!, 10);
 
+      // Enqueue the actual generation job
       await addGenerationJob(
         {
-          ...job.data.form,
+          ...form,
           uploadedContent,
         },
         job.id!,
       );
 
+      if (!isProduction && file) {
+        const fs = await import("fs/promises");
+        await fs.unlink(file.path).catch(() => undefined);
+      } else if (isProduction) {
+        const { UploadModel } = await import("./models/upload.model");
+        await UploadModel.deleteOne({
+          assignmentId: new mongoose.Types.ObjectId(assignmentId),
+        });
+      }
+
       return { success: true };
     } catch (error: any) {
-      console.error(`Extraction job ${job.id} failed:`, error);
+      console.error(`❌ Extraction job ${job.id} failed:`, error);
       await updateAssignmentStatus(job.data.assignmentId, "failed");
       await emitFailed(job.id!, error.message || "Extraction failed");
       throw error;
@@ -58,12 +98,12 @@ const extractionWorker = new Worker<ExtractionJobPayload>(
   { connection, concurrency: 3 },
 );
 
+// ========== PAPER GENERATION WORKER ==========
 const worker = new Worker<GenerationJobPayload>(
   config.queueName,
   async (job: Job<GenerationJobPayload>) => {
     console.log(`📥 Processing job ${job.id}`);
 
-    // Emit progress
     await emitProgress(job.id!, 10);
 
     try {
@@ -74,13 +114,11 @@ const worker = new Worker<GenerationJobPayload>(
         },
       );
 
-      // Attach institution name from the job payload (if any)
       const paperWithInstitution = {
         ...generatedPaper,
         institutionName: job.data.institutionName || undefined,
       };
 
-      // Save to MongoDB
       const paperDoc = await saveGeneratedPaper(
         job.data.assignmentId,
         job.id!,
@@ -88,14 +126,12 @@ const worker = new Worker<GenerationJobPayload>(
         job.data.userId,
       );
 
-      // Update assignment status
       await updateAssignmentStatus(
         job.data.assignmentId,
         "completed",
         paperDoc._id.toString(),
       );
 
-      // Emit completion
       await emitCompleted(job.id!, paperDoc._id.toString(), generatedPaper);
 
       return { success: true, paperId: paperDoc._id };
@@ -103,7 +139,7 @@ const worker = new Worker<GenerationJobPayload>(
       console.error(`❌ Job ${job.id} failed:`, error);
       await updateAssignmentStatus(job.data.assignmentId, "failed");
       await emitFailed(job.id!, error.message || "Generation failed");
-      throw error; // retry?
+      throw error;
     }
   },
   { connection, concurrency: 5 },
@@ -111,6 +147,7 @@ const worker = new Worker<GenerationJobPayload>(
 
 console.log("👷 Worker started, listening for jobs...");
 
+// ========== PDF GENERATION WORKER ==========
 interface PdfJobPayload {
   paperId: string;
   assignmentId: string;
@@ -136,7 +173,7 @@ const pdfWorker = new Worker<PdfJobPayload>(
       if (isProduction) {
         // Store PDF in MongoDB
         paper.pdfData = pdfBuffer;
-        paper.pdfUrl = `/api/papers/${paper._id}/pdf`; // API endpoint to fetch PDF
+        paper.pdfUrl = `/api/papers/${paper._id}/pdf`;
         await paper.save();
 
         await emitCompleted(job.id!, paper._id.toString(), {
