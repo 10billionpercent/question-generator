@@ -55,13 +55,7 @@ export async function generatePdf(paper: any): Promise<Buffer> {
       options: {
         format: "A4",
         printBackground: true,
-        margin: {
-          top: "0mm",
-          bottom: "0mm",
-          left: "0mm",
-          right: "0mm",
-        },
-        preferCSSPageSize: true,
+        preferCSSPageSize: true, 
       },
     }),
   });
