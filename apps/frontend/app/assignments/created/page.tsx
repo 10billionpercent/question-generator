@@ -7,11 +7,17 @@ import TopBar from "@/components/TopBar";
 import { Star } from "lucide-react";
 import { generatePDF } from "@/services/assignmentService";
 
+interface QuestionOption {
+  label: string;
+  text: string;
+}
+
 interface Question {
   text: string;
   difficulty: string;
   marks: number;
   answerHint?: string;
+  options?: QuestionOption[]; // ✅ added for MCQs etc.
 }
 
 interface Section {
@@ -70,7 +76,7 @@ const renderDifficultyStars = (difficulty: string) => {
 export default function CreatedAssignmentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const paperId = searchParams.get("paperId"); // this is actually assignmentId
+  const paperId = searchParams.get("paperId");
 
   const [paper, setPaper] = useState<GeneratedPaper | null>(null);
   const [loading, setLoading] = useState(true);
@@ -302,6 +308,16 @@ export default function CreatedAssignmentPage() {
                     </span>{" "}
                     {q.text}{" "}
                     <span className="paper-qmarks">[{q.marks} Marks]</span>
+                    {/* ✅ Display options (MCQ choices) if present */}
+                    {q.options && q.options.length > 0 && (
+                      <div className="paper-options">
+                        {q.options.map((opt, optIdx) => (
+                          <div key={optIdx} className="paper-option">
+                            {opt.label}) {opt.text}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -331,7 +347,7 @@ export default function CreatedAssignmentPage() {
         .download-btn { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--text-primary); border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.12s; }
         .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .download-btn:hover:not(:disabled) { background: #f0f0f0; }
-        .paper-preview { background: white; border-radius: 0 0 16px 16px; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
+        .paper-preview { font-family: var(--paper-font); background: white; border-radius: 0 0 16px 16px; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
         .paper-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #111; padding-bottom: 16px; }
         .paper-institution { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
         .paper-subject, .paper-class { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
@@ -344,14 +360,16 @@ export default function CreatedAssignmentPage() {
         .paper-section-type { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
         .paper-section-instruction { font-size: 13px; font-style: italic; color: var(--text-secondary); margin-bottom: 14px; }
         .paper-questions { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .paper-question { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
+        .paper-question { font-size: 14px; color: var(--text-primary); line-height: 1.6; margin-bottom: 12px; }
         .paper-difficulty { color: var(--color-brand); font-weight: 700; font-size: 13px; letter-spacing: 1px; }
         .paper-qmarks { color: var(--text-secondary); font-size: 13px; }
+        .paper-options { margin-top: 4px; margin-left: 20px; font-size: 13px; }
+        .paper-option { margin-bottom: 2px; }
         .paper-end { font-size: 14px; font-weight: 700; text-align: left; color: var(--text-primary); margin-top: 20px; padding-top: 16px; }
         .paper-answer-key { margin-top: 24px; padding-top: 20px; }
         .paper-ak-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
         .paper-answers { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .paper-answer { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+        .paper-answer { font-size: 13px; line-height: 1.7; }
         @media (max-width: 768px) {
           .ai-banner { border-radius: 12px 12px 0 0; padding: 16px 18px; }
           .paper-preview { padding: 20px 18px; }

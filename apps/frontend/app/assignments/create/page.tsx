@@ -178,21 +178,21 @@ export default function CreateAssignmentPage() {
       throw new Error("Please upload a file");
     }
 
-    const avgMarksPerQuestion = Math.round(totalMarks / totalQuestions);
-    const questionTypeValues = Array.from(
-      new Set(questionRows.map((row) => typeMapping[row.type] || "mcq")),
-    );
+    // Map UI rows to questionBreakdown array
+    const questionBreakdown = questionRows.map((row) => ({
+      type: typeMapping[row.type] || "mcq",
+      count: row.numQuestions,
+      marks: row.marks,
+    }));
 
     const formPayload: AssignmentFormData = {
-      title: "Assessment",
-      questionTypes: questionTypeValues,
-      totalQuestions: totalQuestions,
-      marksPerQuestion: avgMarksPerQuestion || 1,
+      title: "Assessment", // TODO: add title input field
+      classLevel: "General", // TODO: make this dynamic
+      institutionName: "VedaAI",
+      questionBreakdown,
       additionalInstructions: additionalInfo || undefined,
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       difficultyPreference: "medium",
-      classLevel: "General",
-      institutionName: "VedaAI",
     };
 
     return { formData: formPayload, file: uploadedFile };

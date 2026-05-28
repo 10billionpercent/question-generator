@@ -1,16 +1,19 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+export interface QuestionBreakdownItem {
+  type: string; // e.g., "mcq", "short-answer"
+  count: number;
+  marks: number;
+}
+
 export interface AssignmentFormData {
   title: string;
-  questionTypes: string[]; // e.g., ["mcq", "short-answer"]
-  totalQuestions: number;
-  marksPerQuestion: number;
+  classLevel: string;
   institutionName?: string;
-  studyMaterialUrl?: string; // optional – if you prefer URL instead of file
-  dueDate?: string; // ISO datetime
+  questionBreakdown: QuestionBreakdownItem[];
   additionalInstructions?: string;
+  dueDate?: string; // ISO datetime
   difficultyPreference?: "easy" | "medium" | "hard";
-  classLevel?: string;
 }
 
 export interface UploadResponse {
@@ -21,7 +24,15 @@ export interface UploadResponse {
 
 /**
  * Create an assignment with an uploaded file (PDF / text).
- * Uses multipart/form-data.
+ * Sends multipart/form-data matching the curl example:
+ * - file
+ * - title
+ * - classLevel
+ * - institutionName
+ * - questionBreakdown[0][type]=mcq
+ * - questionBreakdown[0][count]=3
+ * - questionBreakdown[0][marks]=1
+ * - etc.
  */
 export async function createAssignmentWithFile(
   formData: AssignmentFormData,
@@ -29,18 +40,22 @@ export async function createAssignmentWithFile(
 ): Promise<UploadResponse> {
   const fd = new FormData();
 
-  // Append all text fields
-  Object.entries(formData).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
+  // Basic fields
+  fd.append("title", formData.title);
+  fd.append("classLevel", formData.classLevel);
+  if (formData.institutionName)
+    fd.append("institutionName", formData.institutionName);
+  if (formData.additionalInstructions)
+    fd.append("additionalInstructions", formData.additionalInstructions);
+  if (formData.dueDate) fd.append("dueDate", formData.dueDate);
+  if (formData.difficultyPreference)
+    fd.append("difficultyPreference", formData.difficultyPreference);
 
-    if (key === "questionTypes" && Array.isArray(value)) {
-      // Send each type as separate field with array notation – matches curl
-      value.forEach((type) => {
-        fd.append(`${key}[]`, type);
-      });
-    } else {
-      fd.append(key, String(value));
-    }
+  // Question breakdown – send as array of objects with indexed fields
+  formData.questionBreakdown.forEach((item, idx) => {
+    fd.append(`questionBreakdown[${idx}][type]`, item.type);
+    fd.append(`questionBreakdown[${idx}][count]`, String(item.count));
+    fd.append(`questionBreakdown[${idx}][marks]`, String(item.marks));
   });
 
   fd.append("file", file);
@@ -58,26 +73,12 @@ export async function createAssignmentWithFile(
   return res.json();
 }
 
-export async function createAssignmentJson(
-  formData: AssignmentFormData,
-): Promise<{ jobId: string; assignmentId: string }> {
-  const res = await fetch(`${API_BASE}/api/generation/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formData),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
 export async function generatePDF(
   paperId: string,
 ): Promise<{ message: string; jobId: string }> {
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/pdf`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Unknown error" }));
