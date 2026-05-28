@@ -1,103 +1,45 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
 import TopBar from "@/components/TopBar";
 import { Star } from "lucide-react";
+import { generatePDF } from "@/services/assignmentService";
 
-const MOCK_PAPER = {
-  aiMessage:
-    "Certainly, Lakshya! Here are customized Question Paper for your CBSE Grade 8 Science classes on the NCERT chapters:",
-  institutionName: "Delhi Public School, Sector-4, Bokaro",
-  subject: "Science",
-  classLevel: "8th",
-  timeAllowed: "45 minutes",
-  maxMarks: 20,
-  note: "All questions are compulsory unless stated otherwise.",
-  sections: [
-    {
-      name: "Section A",
-      type: "Short Answer Questions",
-      instruction: "Attempt all questions. Each question carries 2 marks",
-      questions: [
-        {
-          num: 1,
-          difficulty: "Easy",
-          text: "Define electroplating. Explain its purpose.",
-          marks: 2,
-        },
-        {
-          num: 2,
-          difficulty: "Moderate",
-          text: "What is the role of a conductor in the process of electrolysis?",
-          marks: 2,
-        },
-        {
-          num: 3,
-          difficulty: "Easy",
-          text: "Why does a solution of copper sulfate conduct electricity?",
-          marks: 2,
-        },
-        {
-          num: 4,
-          difficulty: "Moderate",
-          text: "Describe one example of the chemical effect of electric current in daily life.",
-          marks: 2,
-        },
-        {
-          num: 5,
-          difficulty: "Moderate",
-          text: "Explain why electric current is said to have chemical effects.",
-          marks: 2,
-        },
-        {
-          num: 6,
-          difficulty: "Challenging",
-          text: "How is sodium hydroxide prepared during the electrolysis of brine? Write the chemical reaction involved.",
-          marks: 2,
-        },
-        {
-          num: 7,
-          difficulty: "Challenging",
-          text: "What happens at the cathode and anode during the electrolysis of water? Name the gases evolved.",
-          marks: 2,
-        },
-        {
-          num: 8,
-          difficulty: "Easy",
-          text: "Mention the type of current used in electroplating and justify why it is used.",
-          marks: 2,
-        },
-        {
-          num: 9,
-          difficulty: "Moderate",
-          text: "What is the importance of electric current in the field of metallurgy?",
-          marks: 2,
-        },
-        {
-          num: 10,
-          difficulty: "Challenging",
-          text: "Explain with a chemical equation how copper is deposited during the electroplating of an object.",
-          marks: 2,
-        },
-      ],
-    },
-  ],
-  answerKey: [
-    "Electroplating is the process of depositing a thin layer of metal on the surface of another metal using electric current. Its purpose is to prevent corrosion, improve appearance, or increase thickness.",
-    "A conductor allows the flow of electric current, causing ions in the electrolyte to move and enabling chemical changes at electrodes.",
-    "Copper sulfate solution contains free copper and sulfate ions which carry electric charge, thus conducting electricity.",
-    "An example is the electroplating of silver on jewelry to prevent tarnishing.",
-    "Electric current causes the movement of ions leading to chemical changes at the electrodes, hence it shows chemical effects.",
-    "Sodium hydroxide is formed at the cathode during brine electrolysis as water gains electrons: 2H2O + 2e- -> H2 + 2OH- ; Na+ + OH- -> NaOH (in solution)",
-    "At the cathode: water is reduced to hydrogen gas and hydroxide ions. At the anode: water is oxidized to oxygen gas and hydrogen ions.",
-    "Direct current (DC) is used because it produces a consistent flow of electrons necessary for controlled deposition of metals.",
-    "Electric current helps extract metals from their ores and purify metals by electrolysis in metallurgy.",
-    "During copper electroplating, copper ions in solution gain electrons at the cathode and deposit as copper metal: Cu2+ + 2e- -> Cu (solid)",
-  ],
-};
+interface Question {
+  text: string;
+  difficulty: string;
+  marks: number;
+  answerHint?: string;
+}
+
+interface Section {
+  title: string;
+  type: string;
+  instruction: string;
+  questions: Question[];
+}
+
+interface GeneratedPaper {
+  _id: string;
+  subject: string;
+  classLevel: string;
+  timeAllowed: string;
+  maxMarks: number;
+  compulsoryNote: string;
+  sections: Section[];
+  institutionName?: string;
+  pdfUrl?: string;
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 const renderDifficultyStars = (difficulty: string) => {
-  const starCount =
-    difficulty === "Easy" ? 1 : difficulty === "Moderate" ? 2 : 3;
+  const diffLower = difficulty.toLowerCase();
+  let starCount = 1;
+  if (diffLower === "medium") starCount = 2;
+  else if (diffLower === "hard" || diffLower === "difficult") starCount = 3;
   return Array.from({ length: starCount }).map((_, i) => (
     <Star
       key={i}
@@ -110,7 +52,165 @@ const renderDifficultyStars = (difficulty: string) => {
 };
 
 export default function CreatedAssignmentPage() {
-  const paper = MOCK_PAPER;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const paperId = searchParams.get("paperId"); // this is actually assignmentId
+
+  const [paper, setPaper] = useState<GeneratedPaper | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+
+  // Fetch paper data
+  useEffect(() => {
+    if (!paperId) {
+      setError("No paper ID provided");
+      setLoading(false);
+      return;
+    }
+
+    let retries = 0;
+    const maxRetries = 5;
+    const retryDelay = 1000;
+
+    const fetchPaper = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/papers/${paperId}`);
+        if (res.status === 404 && retries < maxRetries) {
+          retries++;
+          console.log(`Paper not found, retry ${retries}/${maxRetries}...`);
+          setTimeout(fetchPaper, retryDelay);
+          return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setPaper(data);
+        setLoading(false);
+      } catch (err: any) {
+        setError(err.message || "Failed to load paper");
+        setLoading(false);
+      }
+    };
+
+    fetchPaper();
+  }, [paperId]);
+
+  // Setup socket for PDF generation updates
+  useEffect(() => {
+    if (!paperId || loading) return;
+
+    const socketUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    const socket = io(socketUrl);
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Socket connected in created page, subscribing to", paperId);
+      socket.emit("subscribe_to_assignment", paperId);
+    });
+
+    socket.on("generation_completed", async (data: any) => {
+      // When PDF generation completes, refetch paper to get pdfUrl
+      console.log("Received generation_completed in created page:", data);
+      if (data.assignmentId === paperId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/papers/${paperId}`);
+          if (res.ok) {
+            const updatedPaper = await res.json();
+            setPaper(updatedPaper);
+            setPdfGenerating(false);
+            // If pdfUrl is now available, automatically download it
+            if (updatedPaper.pdfUrl) {
+              const url = updatedPaper.pdfUrl.startsWith("http")
+                ? updatedPaper.pdfUrl
+                : `${API_BASE}${updatedPaper.pdfUrl}`;
+              window.open(url, "_blank");
+            }
+          }
+        } catch (err) {
+          console.error("Failed to refetch paper after PDF generation", err);
+        }
+      }
+    });
+
+    socket.on("generation_failed", (data: any) => {
+      if (data.assignmentId === paperId) {
+        console.error("PDF generation failed", data.error);
+        setPdfGenerating(false);
+        alert("PDF generation failed. Please try again.");
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [paperId, loading]);
+
+  const handleDownload = async () => {
+    if (!paperId) return;
+
+    // If PDF already exists, open it
+    if (paper?.pdfUrl) {
+      const url = paper.pdfUrl.startsWith("http")
+        ? paper.pdfUrl
+        : `${API_BASE}${paper.pdfUrl}`;
+      window.open(url, "_blank");
+      return;
+    }
+
+    // Otherwise trigger PDF generation
+    if (pdfGenerating) {
+      alert("PDF is already being generated. Please wait...");
+      return;
+    }
+
+    setPdfGenerating(true);
+    try {
+      await generatePDF(paperId);
+      console.log("PDF generation job started");
+      // The socket will handle the completion and download
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to start PDF generation");
+      setPdfGenerating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <TopBar title="Create New" showBack={false} />
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Loading your assignment...</p>
+        </div>
+        <style>{`
+          .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
+          .spinner { width: 40px; height: 40px; border: 4px solid #e5e5e5; border-top-color: var(--color-brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </>
+    );
+  }
+
+  if (error || !paper) {
+    return (
+      <>
+        <TopBar title="Create New" showBack={false} />
+        <div className="error-container">
+          <p>❌ {error || "Paper not found"}</p>
+          <button onClick={() => router.push("/")}>Go to Dashboard</button>
+        </div>
+        <style>{`
+          .error-container { text-align: center; padding: 60px 20px; }
+          button { margin-top: 20px; padding: 10px 24px; background: var(--text-primary); color: white; border: none; border-radius: 40px; cursor: pointer; }
+        `}</style>
+      </>
+    );
+  }
+
+  const aiMessage = `Here is your generated question paper for ${paper.subject} (${paper.classLevel}).`;
 
   return (
     <>
@@ -118,11 +218,13 @@ export default function CreatedAssignmentPage() {
 
       <div className="home-page">
         <div className="ai-banner">
-          <p className="ai-banner-text">{paper.aiMessage}</p>
+          <p className="ai-banner-text">{aiMessage}</p>
           <button
             className="download-btn"
-            onClick={() => alert("PDF download triggered")}
+            onClick={handleDownload}
+            disabled={pdfGenerating}
           >
+            {pdfGenerating ? "Generating PDF..." : "Download as PDF"}
             <svg
               width="16"
               height="16"
@@ -130,20 +232,19 @@ export default function CreatedAssignmentPage() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
             >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Download as PDF
           </button>
         </div>
 
         <div className="paper-preview">
           <div className="paper-header">
-            <h1 className="paper-institution">{paper.institutionName}</h1>
+            <h1 className="paper-institution">
+              {paper.institutionName || "VedaAI Institute"}
+            </h1>
             <p className="paper-subject">Subject: {paper.subject}</p>
             <p className="paper-class">Class: {paper.classLevel}</p>
           </div>
@@ -155,7 +256,7 @@ export default function CreatedAssignmentPage() {
             <span className="paper-marks">Maximum Marks: {paper.maxMarks}</span>
           </div>
 
-          <p className="paper-note">{paper.note}</p>
+          <p className="paper-note">{paper.compulsoryNote}</p>
 
           <div className="paper-student-info">
             <p>
@@ -170,15 +271,14 @@ export default function CreatedAssignmentPage() {
             </p>
           </div>
 
-          {paper.sections.map((section) => (
-            <div key={section.name} className="paper-section">
-              <h2 className="paper-section-name">{section.name}</h2>
+          {paper.sections.map((section, idx) => (
+            <div key={idx} className="paper-section">
+              <h2 className="paper-section-name">{section.title}</h2>
               <p className="paper-section-type">{section.type}</p>
               <p className="paper-section-instruction">{section.instruction}</p>
-
               <ol className="paper-questions">
-                {section.questions.map((q) => (
-                  <li key={q.num} className="paper-question">
+                {section.questions.map((q, qIdx) => (
+                  <li key={qIdx} className="paper-question">
                     <span className="paper-difficulty">
                       {renderDifficultyStars(q.difficulty)}
                     </span>{" "}
@@ -187,233 +287,57 @@ export default function CreatedAssignmentPage() {
                   </li>
                 ))}
               </ol>
-
-              <p className="paper-end">End of Question Paper</p>
             </div>
           ))}
+          <p className="paper-end">End of Question Paper</p>
 
           <div className="paper-answer-key">
             <h3 className="paper-ak-title">Answer Key:</h3>
             <ol className="paper-answers">
-              {paper.answerKey.map((ans, i) => (
-                <li key={i} className="paper-answer">
-                  {ans}
-                </li>
-              ))}
+              {paper.sections.flatMap((section) =>
+                section.questions.map((q, idx) => (
+                  <li key={idx} className="paper-answer">
+                    {q.answerHint || "No hint provided"}
+                  </li>
+                )),
+              )}
             </ol>
           </div>
         </div>
       </div>
 
       <style>{`
-        .home-page {
-          max-width: 900px;
-          margin: 0 auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-
-        .ai-banner {
-          background: #111111;
-          border-radius: 16px 16px 0 0;
-          padding: 24px 28px;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-
-        .ai-banner-text {
-          color: white;
-          font-size: 15px;
-          font-weight: 400;
-          line-height: 1.6;
-        }
-
-        .download-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: white;
-          color: var(--text-primary);
-          border: none;
-          border-radius: 50px;
-          padding: 10px 20px;
-          font-size: 14px;
-          font-weight: 600;
-          font-family: var(--font);
-          cursor: pointer;
-          align-self: flex-start;
-          transition: background 0.12s;
-        }
-
-        .download-btn:hover {
-          background: #f0f0f0;
-        }
-
-        .paper-preview {
-          background: white;
-          border-radius: 0 0 16px 16px;
-          border: 1px solid #e5e5e5;
-          border-top: none;
-          padding: 36px 40px;
-          font-family: var(--paper-font), sans-serif;
-        }
-
-        .paper-header {
-          text-align: center;
-          margin-bottom: 20px;
-          border-bottom: 2px solid #111;
-          padding-bottom: 16px;
-        }
-
-        .paper-institution {
-          font-size: 20px;
-          font-weight: 800;
-          color: var(--text-primary);
-          letter-spacing: -0.3px;
-        }
-
-        .paper-subject,
-        .paper-class {
-          font-size: 15px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-top: 4px;
-        }
-
-        .paper-meta-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin: 16px 0;
-          font-size: 14px;
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-
-        .paper-note {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 16px;
-        }
-
-        .paper-student-info {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          margin-bottom: 24px;
-          font-size: 14px;
-          color: var(--text-primary);
-          font-weight: 500;
-        }
-
-        .paper-blank {
-          font-weight: 400;
-          color: var(--text-primary);
-        }
-
-        .paper-section {
-          margin-bottom: 24px;
-        }
-
-        .paper-section-name {
-          font-size: 18px;
-          font-weight: 700;
-          text-align: center;
-          color: var(--text-primary);
-          margin-bottom: 4px;
-        }
-
-        .paper-section-type {
-          font-size: 15px;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin-bottom: 2px;
-        }
-
-        .paper-section-instruction {
-          font-size: 13px;
-          font-style: italic;
-          color: var(--text-secondary);
-          margin-bottom: 14px;
-        }
-
-        .paper-questions {
-          padding-left: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .paper-question {
-          font-size: 14px;
-          color: var(--text-primary);
-          line-height: 1.6;
-        }
-
-        .paper-difficulty {
-          color: var(--color-brand);
-          font-weight: 700;
-          font-size: 13px;
-          letter-spacing: 1px;
-        }
-
-        .paper-qmarks {
-          color: var(--text-secondary);
-          font-size: 13px;
-        }
-
-        .paper-end {
-          font-size: 14px;
-          font-weight: 700;
-          text-align: left;
-          color: var(--text-primary);
-          margin-top: 20px;
-          padding-top: 16px;
-        }
-
-        .paper-answer-key {
-          margin-top: 24px;
-          padding-top: 20px;
-        }
-
-        .paper-ak-title {
-          font-size: 15px;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin-bottom: 12px;
-        }
-
-        .paper-answers {
-          padding-left: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .paper-answer {
-          font-size: 13px;
-          color: var(--text-secondary);
-          line-height: 1.7;
-        }
-
+        .home-page { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
+        .ai-banner { background: #111111; border-radius: 16px 16px 0 0; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
+        .ai-banner-text { color: white; font-size: 15px; font-weight: 400; line-height: 1.6; }
+        .download-btn { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--text-primary); border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.12s; }
+        .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .download-btn:hover:not(:disabled) { background: #f0f0f0; }
+        .paper-preview { background: white; border-radius: 0 0 16px 16px; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
+        .paper-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #111; padding-bottom: 16px; }
+        .paper-institution { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
+        .paper-subject, .paper-class { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
+        .paper-meta-row { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary); }
+        .paper-note { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; }
+        .paper-student-info { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; font-size: 14px; color: var(--text-primary); font-weight: 500; }
+        .paper-blank { font-weight: 400; color: var(--text-primary); }
+        .paper-section { margin-bottom: 24px; }
+        .paper-section-name { font-size: 18px; font-weight: 700; text-align: center; color: var(--text-primary); margin-bottom: 4px; }
+        .paper-section-type { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+        .paper-section-instruction { font-size: 13px; font-style: italic; color: var(--text-secondary); margin-bottom: 14px; }
+        .paper-questions { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .paper-question { font-size: 14px; color: var(--text-primary); line-height: 1.6; }
+        .paper-difficulty { color: var(--color-brand); font-weight: 700; font-size: 13px; letter-spacing: 1px; }
+        .paper-qmarks { color: var(--text-secondary); font-size: 13px; }
+        .paper-end { font-size: 14px; font-weight: 700; text-align: left; color: var(--text-primary); margin-top: 20px; padding-top: 16px; }
+        .paper-answer-key { margin-top: 24px; padding-top: 20px; }
+        .paper-ak-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+        .paper-answers { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .paper-answer { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
         @media (max-width: 768px) {
-          .ai-banner {
-            border-radius: 12px 12px 0 0;
-            padding: 16px 18px;
-          }
-
-          .paper-preview {
-            padding: 20px 18px;
-          }
-
-          .paper-meta-row {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 4px;
-          }
+          .ai-banner { border-radius: 12px 12px 0 0; padding: 16px 18px; }
+          .paper-preview { padding: 20px 18px; }
+          .paper-meta-row { flex-direction: column; align-items: flex-start; gap: 4px; }
         }
       `}</style>
     </>

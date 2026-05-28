@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
 import TopBar from "@/components/TopBar";
+import {
+  createAssignmentWithFile,
+  UploadResponse,
+} from "@/services/assignmentService";
 
 const QUESTION_TYPE_OPTIONS = [
   "Multiple Choice Questions",
@@ -15,6 +20,18 @@ const QUESTION_TYPE_OPTIONS = [
   "Match the Following",
 ];
 
+// Mapping from UI label to backend enum value (as per shared schema)
+const typeMapping: Record<string, string> = {
+  "Multiple Choice Questions": "mcq",
+  "Short Questions": "short-answer",
+  "Long Questions": "long-answer",
+  "Diagram/Graph-Based Questions": "long-answer", // fallback
+  "Numerical Problems": "long-answer",
+  "Fill in the Blanks": "fill-blanks",
+  "True/False": "true-false",
+  "Match the Following": "mcq",
+};
+
 interface QuestionRow {
   id: string;
   type: string;
@@ -22,10 +39,21 @@ interface QuestionRow {
   marks: number;
 }
 
+// Real-time status states
+type GenerationStatus =
+  | "idle"
+  | "uploading"
+  | "extracting"
+  | "generating"
+  | "pdf"
+  | "completed"
+  | "failed";
+
 export default function CreateAssignmentPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Form state
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [dueDate, setDueDate] = useState("");
@@ -42,11 +70,29 @@ export default function CreateAssignmentPage() {
     { id: "4", type: "Numerical Problems", numQuestions: 5, marks: 5 },
   ]);
 
+  // Submission & real-time state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<GenerationStatus>("idle");
+  const [progressMessage, setProgressMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [generatedPaperId, setGeneratedPaperId] = useState<string | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+
   const totalQuestions = questionRows.reduce((s, r) => s + r.numQuestions, 0);
   const totalMarks = questionRows.reduce(
     (s, r) => s + r.numQuestions * r.marks,
     0,
   );
+
+  // Cleanup socket on unmount
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
 
   function addRow() {
     const usedTypes = questionRows.map((r) => r.type);
@@ -93,6 +139,7 @@ export default function CreateAssignmentPage() {
 
   function handleFile(file: File) {
     setUploadedFile(file);
+    setErrorMsg(""); // clear any previous error
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -102,9 +149,156 @@ export default function CreateAssignmentPage() {
     if (file) handleFile(file);
   }
 
-  function handleNext() {
-    // TODO: submit to backend
-    router.push("/assignments/created");
+  // Build backend-friendly payload from UI state
+  function buildFormData(): { formData: any; file: File } {
+    if (!uploadedFile) {
+      throw new Error("Please upload a file");
+    }
+
+    // Map question rows to the backend's expected questionTypes array (strings like "mcq")
+    // and also compute total questions & total marks from rows? Backend expects totalQuestions and marksPerQuestion as single numbers.
+    // But your backend schema has totalQuestions and marksPerQuestion as single numbers (per assignment).
+    // The UI splits by type but backend currently expects a global count & marks per question.
+    // Wait – looking at your shared schema: assignmentFormSchema has totalQuestions (number) and marksPerQuestion (number).
+    // It does NOT have per-type breakdown. So we must aggregate.
+    // The backend will then generate a paper with mixed types? Actually the AI prompt will handle distribution.
+    // So we send totalQuestions = sum of all row.numQuestions, and marksPerQuestion = average? Or we can send a more complex field?
+    // But the backend controller uses assignmentFormSchema which has totalQuestions & marksPerQuestion.
+    // So we'll send totalQuestions = sum, and marksPerQuestion = totalMarks / totalQuestions (or just pick the first row's marks? better to compute average)
+    // For simplicity and to match AI expectations, we'll send totalQuestions and marksPerQuestion as per the first non-zero row.
+    // But the user might have different marks per type – the backend doesn't support that yet.
+    // To be safe, we'll send totalQuestions = sum, and marksPerQuestion = totalMarks / totalQuestions (rounded).
+    const avgMarksPerQuestion = Math.round(totalMarks / totalQuestions);
+
+    // Collect unique question types as strings for the backend (mapped)
+    const questionTypeValues = Array.from(
+      new Set(questionRows.map((row) => typeMapping[row.type] || "mcq")),
+    );
+
+    const formPayload = {
+      title: "Assessment", // You might want an input field for title – for now static
+      questionTypes: questionTypeValues,
+      totalQuestions: totalQuestions,
+      marksPerQuestion: avgMarksPerQuestion || 1,
+      additionalInstructions: additionalInfo || undefined,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+      difficultyPreference: "medium" as const, // can be made dynamic later
+      classLevel: "General",
+      institutionName: "VedaAI", // or from user profile
+    };
+
+    return { formData: formPayload, file: uploadedFile };
+  }
+
+  async function handleNext() {
+    if (!uploadedFile) {
+      setErrorMsg("Please upload a study material file.");
+      return;
+    }
+    if (totalQuestions === 0) {
+      setErrorMsg("At least one question is required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatus("uploading");
+    setProgressMessage("Uploading file and creating assignment...");
+    setErrorMsg("");
+
+    try {
+      const { formData, file } = buildFormData();
+      // 1. Submit to backend
+      const response: UploadResponse = await createAssignmentWithFile(
+        formData,
+        file,
+      );
+      const { assignmentId, jobId } = response;
+      console.log("Assignment created:", assignmentId, "Job:", jobId);
+
+      // 2. Connect Socket.IO and subscribe
+      const socketUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const socket = io(socketUrl);
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        console.log("Socket connected, subscribing to", assignmentId);
+        socket.emit("subscribe_to_assignment", assignmentId);
+      });
+
+      // Listen for progress updates
+      socket.on("generation_progress", (data: any) => {
+        console.log("Progress:", data);
+        setProgressMessage(data.message || "Processing...");
+        if (data.stage === "extracting") setStatus("extracting");
+        else if (data.stage === "generating") setStatus("generating");
+        else if (data.stage === "pdf") setStatus("pdf");
+      });
+
+      socket.on("generation_completed", (data: any) => {
+        console.log(
+          "🔔 generation_completed FULL DATA:",
+          JSON.stringify(data, null, 2),
+        );
+
+        // ✅ Use assignmentId – the backend accepts it and returns the paper
+        const idToUse = data.assignmentId;
+        console.log("Redirecting with ASSIGNMENT ID:", idToUse);
+
+        setStatus("completed");
+        setProgressMessage("Assignment generated successfully!");
+        setGeneratedPaperId(idToUse);
+        setPdfUrl(data.paper?.pdfUrl || data.pdfUrl);
+        setIsSubmitting(false);
+
+        router.push(`/assignments/created?paperId=${idToUse}`);
+      });
+
+      socket.on("generation_failed", (data: any) => {
+        console.error("Generation failed:", data.error);
+        setStatus("failed");
+        setErrorMsg(data.error || "Generation failed. Please try again.");
+        setIsSubmitting(false);
+      });
+
+      // Optional: listen for job completion if needed
+      socket.on("generation_started", (data: any) => {
+        setStatus("extracting");
+        setProgressMessage("Extracting text from file...");
+      });
+
+      // Set a timeout to handle cases where socket never responds
+      const timeout = setTimeout(() => {
+        if (status !== "completed" && isSubmitting) {
+          setErrorMsg(
+            "Request timed out. Please check your network and try again.",
+          );
+          setIsSubmitting(false);
+          setStatus("failed");
+        }
+      }, 120000); // 2 minutes
+
+      // Cleanup timeout on success/failure
+      const cleanup = () => clearTimeout(timeout);
+      socket.once("generation_completed", cleanup);
+      socket.once("generation_failed", cleanup);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Failed to create assignment. Check console.");
+      setIsSubmitting(false);
+      setStatus("failed");
+    }
+  }
+
+  // After completion, user can download or go to dashboard
+  function handleDownload() {
+    if (pdfUrl) {
+      window.open(pdfUrl, "_blank");
+    }
+  }
+
+  function handleGoToAssignments() {
+    router.push("/");
   }
 
   return (
@@ -122,7 +316,6 @@ export default function CreateAssignmentPage() {
               </p>
             </div>
           </div>
-          {/* Progress bar */}
           <div className="progress-bar-wrap">
             <div className="progress-bar" />
           </div>
@@ -146,14 +339,13 @@ export default function CreateAssignmentPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".jpg,.jpeg,.png,.pdf"
+              accept=".jpg,.jpeg,.png,.pdf,.txt"
               style={{ display: "none" }}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleFile(file);
               }}
             />
-
             {uploadedFile ? (
               <div className="upload-success">
                 <svg
@@ -163,8 +355,6 @@ export default function CreateAssignmentPage() {
                   fill="none"
                   stroke="#22c55e"
                   strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
@@ -180,8 +370,6 @@ export default function CreateAssignmentPage() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                   >
                     <polyline points="16 16 12 12 8 16" />
                     <line x1="12" y1="12" x2="12" y2="21" />
@@ -191,7 +379,7 @@ export default function CreateAssignmentPage() {
                 <p className="upload-main">
                   Choose a file or drag &amp; drop it here
                 </p>
-                <p className="upload-hint">JPEG, PNG, upto 10MB</p>
+                <p className="upload-hint">PDF, TXT, JPEG, PNG up to 10MB</p>
                 <button
                   className="browse-btn"
                   onClick={(e) => {
@@ -204,9 +392,7 @@ export default function CreateAssignmentPage() {
               </>
             )}
           </div>
-          <p className="upload-caption">
-            Upload images of your preferred document/image
-          </p>
+          <p className="upload-caption">Upload study material (PDF or text)</p>
 
           {/* Due Date */}
           <div className="field-group">
@@ -227,14 +413,11 @@ export default function CreateAssignmentPage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
-                  <line x1="12" y1="2" x2="12" y2="6" />
                 </svg>
               </button>
             </div>
@@ -247,7 +430,6 @@ export default function CreateAssignmentPage() {
               <span className="qt-col-num">No. of Questions</span>
               <span className="qt-col-marks">Marks</span>
             </div>
-
             {questionRows.map((row) => (
               <div key={row.id} className="qt-row">
                 <div className="qt-type-wrap">
@@ -269,14 +451,11 @@ export default function CreateAssignmentPage() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                     className="qt-select-arrow"
                   >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </div>
-
                 <button
                   className="qt-remove-btn"
                   onClick={() => removeRow(row.id)}
@@ -289,16 +468,14 @@ export default function CreateAssignmentPage() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                   >
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
-
                 <div className="qt-stepper">
                   <button
+                    type="button"
                     className="qt-step-btn"
                     onClick={() => decrement(row.id, "numQuestions")}
                   >
@@ -306,15 +483,16 @@ export default function CreateAssignmentPage() {
                   </button>
                   <span className="qt-step-val">{row.numQuestions}</span>
                   <button
+                    type="button"
                     className="qt-step-btn"
                     onClick={() => increment(row.id, "numQuestions")}
                   >
                     +
                   </button>
                 </div>
-
                 <div className="qt-stepper">
                   <button
+                    type="button"
                     className="qt-step-btn"
                     onClick={() => decrement(row.id, "marks")}
                   >
@@ -322,6 +500,7 @@ export default function CreateAssignmentPage() {
                   </button>
                   <span className="qt-step-val">{row.marks}</span>
                   <button
+                    type="button"
                     className="qt-step-btn"
                     onClick={() => increment(row.id, "marks")}
                   >
@@ -330,8 +509,6 @@ export default function CreateAssignmentPage() {
                 </div>
               </div>
             ))}
-
-            {/* Add row */}
             <button className="qt-add-btn" onClick={addRow}>
               <span className="qt-add-icon">
                 <svg
@@ -341,8 +518,6 @@ export default function CreateAssignmentPage() {
                   fill="none"
                   stroke="white"
                   strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
@@ -350,8 +525,6 @@ export default function CreateAssignmentPage() {
               </span>
               Add Question Type
             </button>
-
-            {/* Totals */}
             <div className="qt-totals">
               <span>
                 Total Questions : <strong>{totalQuestions}</strong>
@@ -384,8 +557,6 @@ export default function CreateAssignmentPage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
                   <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -395,43 +566,95 @@ export default function CreateAssignmentPage() {
               </button>
             </div>
           </div>
+
+          {/* Real-time status display */}
+          {isSubmitting && (
+            <div className="status-card">
+              <div className="status-spinner"></div>
+              <div className="status-text">
+                <strong>{progressMessage}</strong>
+                <span className="status-stage">{status}</span>
+              </div>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="error-message">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {errorMsg}
+            </div>
+          )}
+          {status === "completed" && pdfUrl && (
+            <div className="success-card">
+              <p>✅ Assignment generated successfully!</p>
+              <div className="success-buttons">
+                <button onClick={handleDownload} className="download-btn">
+                  📄 Download PDF
+                </button>
+                <button
+                  onClick={handleGoToAssignments}
+                  className="dashboard-btn"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Navigation */}
-        <div className="create-nav">
-          <button className="nav-prev-btn" onClick={() => router.back()}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* Navigation - hide when completed to avoid double action */}
+        {status !== "completed" && (
+          <div className="create-nav">
+            <button
+              className="nav-prev-btn"
+              onClick={() => router.back()}
+              disabled={isSubmitting}
             >
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Previous
-          </button>
-          <button className="nav-next-btn" onClick={handleNext}>
-            Next
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Previous
+            </button>
+            <button
+              className="nav-next-btn"
+              onClick={handleNext}
+              disabled={isSubmitting}
             >
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </button>
-        </div>
+              {isSubmitting ? "Creating..." : "Next"}
+              {!isSubmitting && (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -442,15 +665,12 @@ export default function CreateAssignmentPage() {
           flex-direction: column;
           gap: 0;
         }
-
         .create-header {
           margin-bottom: 0;
         }
-
         .create-header-title-row {
           display: none;
         }
-
         .progress-bar-wrap {
           height: 5px;
           background: #e5e5e5;
@@ -458,14 +678,12 @@ export default function CreateAssignmentPage() {
           margin-bottom: 24px;
           overflow: hidden;
         }
-
         .progress-bar {
           height: 100%;
           width: 55%;
           background: var(--text-primary);
           border-radius: 4px;
         }
-
         .create-card {
           background: white;
           border-radius: 20px;
@@ -475,7 +693,6 @@ export default function CreateAssignmentPage() {
           flex-direction: column;
           gap: 24px;
         }
-
         .section-title {
           font-size: 20px;
           font-weight: 700;
@@ -483,14 +700,11 @@ export default function CreateAssignmentPage() {
           letter-spacing: -0.3px;
           margin-bottom: 0;
         }
-
         .section-sub {
           font-size: 13px;
           color: var(--text-secondary);
           margin-top: -18px;
         }
-
-        /* ---- File Upload ---- */
         .file-upload {
           border: 2px dashed #d5d5d5;
           border-radius: 14px;
@@ -503,34 +717,17 @@ export default function CreateAssignmentPage() {
           transition: border-color 0.15s, background 0.15s;
           background: #fafafa;
         }
-
-        .file-upload:hover,
-        .file-upload.drag-over {
+        .file-upload:hover, .file-upload.drag-over {
           border-color: var(--color-brand);
           background: var(--color-brand-light);
         }
-
         .file-upload.has-file {
           border-color: #22c55e;
           background: #f0fdf4;
         }
-
-        .upload-icon {
-          color: var(--text-tertiary);
-          margin-bottom: 4px;
-        }
-
-        .upload-main {
-          font-size: 15px;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-
-        .upload-hint {
-          font-size: 12px;
-          color: var(--text-tertiary);
-        }
-
+        .upload-icon { color: var(--text-tertiary); margin-bottom: 4px; }
+        .upload-main { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+        .upload-hint { font-size: 12px; color: var(--text-tertiary); }
         .browse-btn {
           margin-top: 6px;
           background: white;
@@ -542,378 +739,61 @@ export default function CreateAssignmentPage() {
           font-family: var(--font);
           color: var(--text-primary);
           cursor: pointer;
-          transition: background 0.12s;
         }
-
-        .browse-btn:hover {
-          background: #f5f5f5;
-        }
-
-        .upload-success {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .upload-filename {
-          font-size: 14px;
-          font-weight: 600;
-          color: #16a34a;
-        }
-
-        .upload-caption {
-          font-size: 12px;
-          color: var(--text-tertiary);
-          text-align: center;
-          margin-top: -16px;
-        }
-
-        /* ---- Due Date ---- */
-        .field-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .field-label {
-          font-size: 15px;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .field-label-hint {
-          font-weight: 400;
-          color: var(--text-secondary);
-          font-size: 13px;
-        }
-
-        .date-input-wrap {
-          display: flex;
-          align-items: center;
-          background: white;
-          border: 1px solid #e0e0e0;
-          border-radius: 12px;
-          overflow: hidden;
-        }
-
-        .date-input {
-          flex: 1;
-          border: none;
-          padding: 13px 16px;
-          font-size: 14px;
-          color: var(--text-tertiary);
-          font-family: var(--font);
-          background: transparent;
-        }
-
-        .date-icon-btn {
-          width: 44px;
-          height: 44px;
-          background: transparent;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--text-secondary);
-          flex-shrink: 0;
-        }
-
-        /* ---- Question Type table ---- */
-        .qt-section {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .qt-header-row {
-          display: grid;
-          grid-template-columns: 1fr 130px 100px;
-          gap: 8px;
-          padding: 0 8px;
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .qt-col-type { grid-column: 1; }
-        .qt-col-num { text-align: center; }
-        .qt-col-marks { text-align: center; }
-
-        .qt-row {
-          display: grid;
-          grid-template-columns: 1fr 28px 130px 100px;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .qt-type-wrap {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .qt-type-select {
-          width: 100%;
-          appearance: none;
-          -webkit-appearance: none;
-          border: 1px solid #e0e0e0;
-          border-radius: 10px;
-          padding: 11px 36px 11px 14px;
-          font-size: 13px;
-          font-weight: 500;
-          font-family: var(--font);
-          color: var(--text-primary);
-          background: white;
-          cursor: pointer;
-        }
-
-        .qt-select-arrow {
-          position: absolute;
-          right: 12px;
-          color: var(--text-secondary);
-          pointer-events: none;
-        }
-
-        .qt-remove-btn {
-          width: 28px;
-          height: 28px;
-          background: transparent;
-          border: none;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--text-secondary);
-          transition: background 0.12s, color 0.12s;
-        }
-
-        .qt-remove-btn:hover {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .qt-stepper {
-          display: flex;
-          align-items: center;
-          gap: 0;
-          border: 1px solid #e0e0e0;
-          border-radius: 10px;
-          overflow: hidden;
-          background: white;
-        }
-
-        .qt-step-btn {
-          width: 34px;
-          height: 40px;
-          background: transparent;
-          border: none;
-          font-size: 18px;
-          font-weight: 400;
-          color: var(--text-secondary);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.1s;
-          flex-shrink: 0;
-        }
-
-        .qt-step-btn:hover {
-          background: #f5f5f5;
-        }
-
-        .qt-step-val {
-          flex: 1;
-          text-align: center;
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-primary);
-          border-left: 1px solid #e5e5e5;
-          border-right: 1px solid #e5e5e5;
-          min-width: 28px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .qt-add-btn {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: transparent;
-          border: none;
-          font-size: 14px;
-          font-weight: 600;
-          font-family: var(--font);
-          color: var(--text-primary);
-          cursor: pointer;
-          padding: 4px 0;
-          width: fit-content;
-        }
-
-        .qt-add-icon {
-          width: 32px;
-          height: 32px;
-          background: var(--text-primary);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .qt-totals {
-          display: flex;
-          justify-content: flex-end;
-          gap: 24px;
-          font-size: 14px;
-          color: var(--text-secondary);
-          padding-top: 4px;
-        }
-
-        .qt-totals strong {
-          color: var(--text-primary);
-        }
-
-        /* ---- Additional Info ---- */
-        .textarea-wrap {
-          position: relative;
-        }
-
-        .additional-textarea {
-          width: 100%;
-          border: 1px solid #e0e0e0;
-          border-radius: 12px;
-          padding: 14px 48px 14px 16px;
-          font-size: 13px;
-          color: var(--text-primary);
-          font-family: var(--font);
-          resize: none;
-          background: white;
-          line-height: 1.6;
-        }
-
-        .additional-textarea::placeholder {
-          color: var(--text-tertiary);
-        }
-
-        .mic-btn {
-          position: absolute;
-          bottom: 12px;
-          right: 14px;
-          width: 28px;
-          height: 28px;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          color: var(--text-secondary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 6px;
-          transition: background 0.12s;
-        }
-
-        .mic-btn:hover {
-          background: #f0f0f0;
-        }
-
-        /* ---- Nav Buttons ---- */
-        .create-nav {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 24px;
-        }
-
-        .nav-prev-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: white;
-          border: 1.5px solid #d5d5d5;
-          border-radius: 50px;
-          padding: 12px 24px;
-          font-size: 15px;
-          font-weight: 600;
-          font-family: var(--font);
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: background 0.12s;
-        }
-
-        .nav-prev-btn:hover {
-          background: #f5f5f5;
-        }
-
-        .nav-next-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: var(--text-primary);
-          color: white;
-          border: none;
-          border-radius: 50px;
-          padding: 12px 28px;
-          font-size: 15px;
-          font-weight: 600;
-          font-family: var(--font);
-          cursor: pointer;
-          transition: background 0.12s;
-        }
-
-        .nav-next-btn:hover {
-          background: #222;
-        }
-
+        .browse-btn:hover { background: #f5f5f5; }
+        .upload-success { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .upload-filename { font-size: 14px; font-weight: 600; color: #16a34a; }
+        .upload-caption { font-size: 12px; color: var(--text-tertiary); text-align: center; margin-top: -16px; }
+        .field-group { display: flex; flex-direction: column; gap: 8px; }
+        .field-label { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .field-label-hint { font-weight: 400; color: var(--text-secondary); font-size: 13px; }
+        .date-input-wrap { display: flex; align-items: center; background: white; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
+        .date-input { flex: 1; border: none; padding: 13px 16px; font-size: 14px; color: var(--text-tertiary); font-family: var(--font); background: transparent; }
+        .date-icon-btn { width: 44px; height: 44px; background: transparent; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); flex-shrink: 0; }
+        .qt-section { display: flex; flex-direction: column; gap: 10px; }
+        .qt-header-row { display: grid; grid-template-columns: 1fr 130px 100px; gap: 8px; padding: 0 8px; font-size: 13px; font-weight: 700; color: var(--text-primary); }
+        .qt-row { display: grid; grid-template-columns: 1fr 28px 130px 100px; gap: 8px; align-items: center; }
+        .qt-type-wrap { position: relative; display: flex; align-items: center; }
+        .qt-type-select { width: 100%; appearance: none; border: 1px solid #e0e0e0; border-radius: 10px; padding: 11px 36px 11px 14px; font-size: 13px; font-weight: 500; font-family: var(--font); color: var(--text-primary); background: white; cursor: pointer; }
+        .qt-select-arrow { position: absolute; right: 12px; color: var(--text-secondary); pointer-events: none; }
+        .qt-remove-btn { width: 28px; height: 28px; background: transparent; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); }
+        .qt-remove-btn:hover { background: #fee2e2; color: #dc2626; }
+        .qt-stepper { display: flex; align-items: center; gap: 0; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; background: white; }
+        .qt-step-btn { width: 34px; height: 40px; background: transparent; border: none; font-size: 18px; font-weight: 400; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qt-step-btn:hover { background: #f5f5f5; }
+        .qt-step-val { flex: 1; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-primary); border-left: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; min-width: 28px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .qt-add-btn { display: flex; align-items: center; gap: 10px; background: transparent; border: none; font-size: 14px; font-weight: 600; font-family: var(--font); color: var(--text-primary); cursor: pointer; padding: 4px 0; width: fit-content; }
+        .qt-add-icon { width: 32px; height: 32px; background: var(--text-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .qt-totals { display: flex; justify-content: flex-end; gap: 24px; font-size: 14px; color: var(--text-secondary); padding-top: 4px; }
+        .qt-totals strong { color: var(--text-primary); }
+        .textarea-wrap { position: relative; }
+        .additional-textarea { width: 100%; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 48px 14px 16px; font-size: 13px; color: var(--text-primary); font-family: var(--font); resize: none; background: white; line-height: 1.6; }
+        .mic-btn { position: absolute; bottom: 12px; right: 14px; width: 28px; height: 28px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .mic-btn:hover { background: #f0f0f0; }
+        .create-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+        .nav-prev-btn { display: flex; align-items: center; gap: 8px; background: white; border: 1.5px solid #d5d5d5; border-radius: 50px; padding: 12px 24px; font-size: 15px; font-weight: 600; font-family: var(--font); color: var(--text-primary); cursor: pointer; }
+        .nav-next-btn { display: flex; align-items: center; gap: 8px; background: var(--text-primary); color: white; border: none; border-radius: 50px; padding: 12px 28px; font-size: 15px; font-weight: 600; font-family: var(--font); cursor: pointer; }
+        .nav-next-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .status-card { background: #f8fafc; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 12px; border-left: 4px solid var(--color-brand); }
+        .status-spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: var(--color-brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status-text { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+        .status-stage { font-size: 12px; color: var(--text-tertiary); text-transform: capitalize; }
+        .error-message { background: #fee2e2; color: #b91c1c; padding: 12px 16px; border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .success-card { background: #dcfce7; border-radius: 14px; padding: 16px; text-align: center; }
+        .success-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
+        .download-btn, .dashboard-btn { padding: 8px 20px; border-radius: 40px; font-weight: 600; border: none; cursor: pointer; }
+        .download-btn { background: var(--color-brand); color: white; }
+        .dashboard-btn { background: white; border: 1px solid #ccc; }
         @media (max-width: 768px) {
-          .create-card {
-            padding: 20px 16px;
-            gap: 18px;
-          }
-
-          .qt-header-row {
-            display: none;
-          }
-
-          .qt-row {
-            grid-template-columns: 1fr 28px;
-            grid-template-rows: auto auto;
-            gap: 8px;
-          }
-
-          .qt-type-wrap {
-            grid-column: 1;
-          }
-
-          .qt-remove-btn {
-            grid-column: 2;
-            grid-row: 1;
-          }
-
-          .qt-stepper:first-of-type {
-            grid-column: 1;
-            grid-row: 2;
-          }
-
-          .qt-stepper:last-of-type {
-            grid-column: 2 / span 1;
-            grid-row: 2;
-          }
-
-          /* Mobile: show label above each stepper */
-          .qt-row::before {
-            content: 'No. of Questions';
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            grid-column: 1;
-            grid-row: 2;
-          }
+          .create-card { padding: 20px 16px; gap: 18px; }
+          .qt-header-row { display: none; }
+          .qt-row { grid-template-columns: 1fr 28px; grid-template-rows: auto auto; gap: 8px; }
+          .qt-type-wrap { grid-column: 1; }
+          .qt-remove-btn { grid-column: 2; grid-row: 1; }
+          .qt-stepper:first-of-type { grid-column: 1; grid-row: 2; }
+          .qt-stepper:last-of-type { grid-column: 2 / span 1; grid-row: 2; }
+          .qt-row::before { content: 'No. of Questions'; font-size: 12px; font-weight: 700; color: var(--text-secondary); grid-column: 1; grid-row: 2; }
         }
       `}</style>
     </>
