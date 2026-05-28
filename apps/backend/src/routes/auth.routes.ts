@@ -108,8 +108,42 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/me", requireAuth, (req: Request, res: Response) => {
-  return res.json({ user: req.authUser });
+router.get("/me", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { AssignmentModel } = await import("../models/assignment.model");
+    const { GeneratedPaperModel } =
+      await import("../models/generated-paper.model");
+
+    const assignments = await AssignmentModel.find({
+      userId: req.authUser!.userId,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // For each assignment, attach the generated paper if completed
+    const enriched = await Promise.all(
+      assignments.map(async (assignment) => {
+        const paper =
+          assignment.status === "completed"
+            ? await GeneratedPaperModel.findOne({
+                assignmentId: assignment._id,
+              }).lean()
+            : null;
+        return {
+          ...assignment,
+          paper, // attached paper if exists
+        };
+      }),
+    );
+
+    return res.json({
+      user: req.authUser,
+      assignments: enriched,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to fetch user data" });
+  }
 });
 
 export { router as authRouter };

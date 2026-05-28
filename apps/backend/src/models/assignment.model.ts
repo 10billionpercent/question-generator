@@ -2,12 +2,12 @@ import mongoose, { Schema, Document } from "mongoose";
 import { AssignmentForm } from "@veda/shared";
 
 export interface IAssignment extends AssignmentForm, Document {
-  status: "pending" | "generating" | "completed" | "failed";
-  userId?: mongoose.Types.ObjectId;
+  status: "pending" | "extracting" | "generating" | "completed" | "failed";
   jobId?: string;
   paperId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  userId?: mongoose.Types.ObjectId;
 }
 
 const assignmentSchema = new Schema<IAssignment>(
@@ -22,14 +22,14 @@ const assignmentSchema = new Schema<IAssignment>(
     additionalInstructions: String,
     difficultyPreference: { type: String, enum: ["easy", "medium", "hard"] },
     classLevel: String,
-    userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     status: {
       type: String,
       default: "pending",
-      enum: ["pending", "generating", "completed", "failed"],
+      enum: ["pending", "extracting", "generating", "completed", "failed"],
     },
     jobId: String,
     paperId: { type: Schema.Types.ObjectId, ref: "GeneratedPaper" },
+    userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true },
 );
