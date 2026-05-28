@@ -10,7 +10,7 @@ import {
   AssignmentFormData,
 } from "@/services/assignmentService";
 import { GeneratedPaper } from "@veda/shared";
-import styles from "./CreateAssignmentPage.module.css";
+import styles from "./createAssignmentPage.module.css";
 
 // Socket event types
 interface GenerationProgressEvent {
