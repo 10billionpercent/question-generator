@@ -2,6 +2,10 @@
   "name": "question-generator",
   "packageManager": "pnpm@10.11.1",
   "private": true,
+  "engines": {
+    "node": "20.x",
+    "pnpm": "10.x"
+  },
   "scripts": {
     "dev:backend": "pnpm --filter @veda/backend dev",
     "dev:worker": "pnpm --filter @veda/worker dev",
