@@ -229,7 +229,7 @@ async function startWorkers() {
           throw error;
         }
       },
-      { connection, concurrency: 3 },
+      { connection, concurrency: 1 },
     );
 
     console.log("👷 All workers started successfully");

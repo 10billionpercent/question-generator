@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "tsx src/worker.ts",
     "build": "tsc",
-    "start": "tsx src/worker.ts"
+    "start": "node dist/worker.js",
+    "postbuild": "copyfiles -u 1 src/templates/**/* dist/"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",
@@ -19,6 +20,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "copyfiles": "^2.4.1",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   }

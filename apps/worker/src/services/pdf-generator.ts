@@ -8,10 +8,8 @@ Handlebars.registerHelper("inc", (value: number) => value + 1);
 
 export async function generatePdf(paper: any): Promise<Buffer> {
   const templatePath = path.resolve(
-    __dirname,
-    "..",
-    "templates",
-    "paper-template.html",
+    process.cwd(),
+    "apps/worker/src/templates/paper-template.html",
   );
   const templateSource = await fs.readFile(templatePath, "utf-8");
   const template = Handlebars.compile(templateSource);
@@ -42,7 +40,23 @@ export async function generatePdf(paper: any): Promise<Buffer> {
     answersList: answersList,
   });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-sandbox",
+      "--single-process",
+      "--disable-software-rasterizer",
+      "--disable-extensions",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--disable-backgrounding-occluded-windows",
+      "--memory-pressure-off",
+      "--disable-features=TranslateUI",
+      "--disable-ipc-flooding-protection",
+    ],
+  });
   const context = await browser.newContext();
   const page = await context.newPage();
 
