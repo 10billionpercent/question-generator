@@ -7,17 +7,24 @@ import { getIO } from "../socket";
 export const createGenerationJob = async (req: Request, res: Response) => {
   try {
     const validatedForm = assignmentFormSchema.parse(req.body);
+    const form = {
+      ...validatedForm,
+      institutionName:
+        validatedForm.institutionName || req.authUser?.institutionName,
+    };
 
     // Save assignment with pending status
     const assignment = await AssignmentModel.create({
-      ...validatedForm,
+      ...form,
+      userId: req.authUser?.userId,
       status: "pending",
     });
 
     // Extract uploaded content if present (simplified: in real app parse PDF)
     const payload = generationJobPayloadSchema.parse({
-      ...validatedForm,
+      ...form,
       assignmentId: assignment._id.toString(),
+      userId: req.authUser?.userId,
       uploadedContent: undefined, // will be filled if file upload exists
     });
 

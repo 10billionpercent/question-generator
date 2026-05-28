@@ -1,5 +1,11 @@
 declare namespace Express {
   interface Request {
-    file?: Express.Multer.File; 
+    file?: Express.Multer.File;
+    authUser?: {
+      userId: string;
+      name: string;
+      emailOrPhone: string;
+      institutionName: string;
+    };
   }
 }

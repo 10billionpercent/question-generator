@@ -3,6 +3,7 @@ import { GeneratedPaper } from "@veda/shared";
 
 export interface IGeneratedPaper extends GeneratedPaper, Document {
   assignmentId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
   jobId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +44,7 @@ const generatedPaperSchema = new Schema<IGeneratedPaper>(
       required: true,
     },
     jobId: { type: String, required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     institutionName: { type: String, default: null },
     subject: { type: String, required: true },
     classLevel: { type: String, required: true },

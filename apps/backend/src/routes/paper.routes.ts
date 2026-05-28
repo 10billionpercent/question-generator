@@ -1,8 +1,24 @@
 import { Router, Request, Response } from "express";
 import { GeneratedPaperModel } from "../models/generated-paper.model";
 import { addPdfJob } from "../queues/pdf.queue";
+import { requireAuth } from "../middleware/auth";
 
 const router: Router = Router();
+
+// Signed-in history view. Guest papers remain accessible by assignment id.
+router.get("/mine", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const papers = await GeneratedPaperModel.find({
+      userId: req.authUser!.userId,
+    })
+      .sort({ createdAt: -1 })
+      .select("-pdfData");
+
+    return res.json({ papers });
+  } catch (error) {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
 
 // Serve PDF directly from DB (used in production)
 router.get("/:paperId/pdf", async (req: Request, res: Response) => {

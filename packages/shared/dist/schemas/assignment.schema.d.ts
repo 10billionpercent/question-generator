@@ -51,6 +51,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     classLevel: z.ZodOptional<z.ZodString>;
 } & {
     assignmentId: z.ZodOptional<z.ZodString>;
+    userId: z.ZodOptional<z.ZodString>;
     uploadedContent: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     title: string;
@@ -64,6 +65,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     difficultyPreference?: "easy" | "medium" | "hard" | undefined;
     classLevel?: string | undefined;
     assignmentId?: string | undefined;
+    userId?: string | undefined;
     uploadedContent?: string | undefined;
 }, {
     title: string;
@@ -77,6 +79,7 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     difficultyPreference?: "easy" | "medium" | "hard" | undefined;
     classLevel?: string | undefined;
     assignmentId?: string | undefined;
+    userId?: string | undefined;
     uploadedContent?: string | undefined;
 }>;
 export type GenerationJobPayload = z.infer<typeof generationJobPayloadSchema>;

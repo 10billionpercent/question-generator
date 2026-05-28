@@ -16,11 +16,13 @@ export const saveGeneratedPaper = async (
   assignmentId: string | undefined,
   jobId: string,
   paper: GeneratedPaper,
+  userId?: string,
 ) => {
   await connectDB();
   if (!assignmentId) throw new Error("assignmentId missing");
   return GeneratedPaperModel.create({
     assignmentId: new mongoose.Types.ObjectId(assignmentId),
+    ...(userId && { userId: new mongoose.Types.ObjectId(userId) }),
     jobId,
     ...paper,
   });

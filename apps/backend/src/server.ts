@@ -8,6 +8,8 @@ import { initSocket } from "./socket";
 import { generationRouter } from "./routes/generation.routes";
 import { paperRouter } from "./routes/paper.routes";
 import { uploadRouter } from "./routes/upload.routes";
+import { authRouter } from "./routes/auth.routes";
+import { optionalAuth } from "./middleware/auth";
 import path from "path";
 
 const app = express();
@@ -21,8 +23,9 @@ app.use(express.json());
 app.use("/pdfs", express.static(path.resolve(__dirname, "../../pdfs")));
 
 // Routes
-app.use("/api/generation", generationRouter);
-app.use("/api/generation", uploadRouter); 
+app.use("/api/auth", authRouter);
+app.use("/api/generation", optionalAuth, generationRouter);
+app.use("/api/generation", optionalAuth, uploadRouter);
 app.use("/api/papers", paperRouter);
 
 // Health check

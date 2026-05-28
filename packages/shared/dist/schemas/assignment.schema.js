@@ -24,6 +24,7 @@ exports.assignmentFormSchema = zod_1.z.object({
 });
 exports.generationJobPayloadSchema = exports.assignmentFormSchema.extend({
     assignmentId: zod_1.z.string().optional(),
+    userId: zod_1.z.string().optional(),
     uploadedContent: zod_1.z.string().optional(), // extracted text from PDF/txt
 });
 //# sourceMappingURL=assignment.schema.js.map

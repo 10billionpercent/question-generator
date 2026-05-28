@@ -3,6 +3,7 @@ import { AssignmentForm } from "@veda/shared";
 
 export interface IAssignment extends AssignmentForm, Document {
   status: "pending" | "generating" | "completed" | "failed";
+  userId?: mongoose.Types.ObjectId;
   jobId?: string;
   paperId?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -12,6 +13,7 @@ export interface IAssignment extends AssignmentForm, Document {
 const assignmentSchema = new Schema<IAssignment>(
   {
     title: { type: String, required: true },
+    institutionName: String,
     studyMaterialUrl: String,
     dueDate: String,
     questionTypes: [{ type: String, required: true }],
@@ -19,6 +21,8 @@ const assignmentSchema = new Schema<IAssignment>(
     marksPerQuestion: { type: Number, required: true },
     additionalInstructions: String,
     difficultyPreference: { type: String, enum: ["easy", "medium", "hard"] },
+    classLevel: String,
+    userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     status: {
       type: String,
       default: "pending",

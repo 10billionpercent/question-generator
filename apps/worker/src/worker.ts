@@ -85,6 +85,7 @@ const worker = new Worker<GenerationJobPayload>(
         job.data.assignmentId,
         job.id!,
         paperWithInstitution,
+        job.data.userId,
       );
 
       // Update assignment status

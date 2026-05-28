@@ -20,17 +20,24 @@ router.post(
     try {
       // Validate form fields
       const validatedForm = assignmentFormSchema.parse(req.body);
+      const form = {
+        ...validatedForm,
+        institutionName:
+          validatedForm.institutionName || req.authUser?.institutionName,
+      };
 
       // Create assignment
       const assignment = await AssignmentModel.create({
-        ...validatedForm,
+        ...form,
+        userId: req.authUser?.userId,
         status: "pending",
       });
 
       // Prepare job payload
       const payload = generationJobPayloadSchema.parse({
-        ...validatedForm,
+        ...form,
         assignmentId: assignment._id.toString(),
+        userId: req.authUser?.userId,
       });
 
       // Enqueue extraction job

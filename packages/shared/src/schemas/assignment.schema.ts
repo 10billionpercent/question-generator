@@ -28,6 +28,7 @@ export type AssignmentForm = z.infer<typeof assignmentFormSchema>;
 
 export const generationJobPayloadSchema = assignmentFormSchema.extend({
   assignmentId: z.string().optional(),
+  userId: z.string().optional(),
   uploadedContent: z.string().optional(), // extracted text from PDF/txt
 });
 export type GenerationJobPayload = z.infer<typeof generationJobPayloadSchema>;
