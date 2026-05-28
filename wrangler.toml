@@ -1,0 +1,3 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "question-generator-vedaai"
+compatibility_flags = [ "nodejs_compat" ]
