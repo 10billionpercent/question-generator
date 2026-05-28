@@ -107,6 +107,7 @@ export default function CreateAssignmentPage() {
   const [progressMessage, setProgressMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [progressPercent, setProgressPercent] = useState(0);
   const socketRef = useRef<Socket | null>(null);
 
   const totalQuestions = questionRows.reduce((s, r) => s + r.numQuestions, 0);
@@ -235,6 +236,7 @@ export default function CreateAssignmentPage() {
       socket.on("generation_progress", (data: GenerationProgressEvent) => {
         console.log("Progress:", data);
         setProgressMessage(data.message || "Processing...");
+        setProgressPercent(data.progress || 0);
         if (data.stage === "extracting") setStatus("extracting");
         else if (data.stage === "generating") setStatus("generating");
         else if (data.stage === "pdf") setStatus("pdf");
@@ -582,13 +584,21 @@ export default function CreateAssignmentPage() {
             </div>
           </div>
 
-          {/* Real-time status display */}
           {isSubmitting && (
             <div className={styles["status-card"]}>
-              <div className={styles["status-spinner"]}></div>
+              {progressPercent > 0 && (
+                <div className={styles["progress-container"]}>
+                  <div
+                    className={styles["progress-bar-fill"]}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              )}
               <div className={styles["status-text"]}>
                 <strong>{progressMessage}</strong>
-                <span className={styles["status-stage"]}>{status}</span>
+                <span className={styles["status-stage"]}>
+                  {status} ({progressPercent}%)
+                </span>
               </div>
             </div>
           )}

@@ -470,3 +470,18 @@
     grid-row: 2;
   }
 }
+
+.progress-container {
+  width: 100%;
+  background-color: #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 8px;
+  background-color: var(--color-brand);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
