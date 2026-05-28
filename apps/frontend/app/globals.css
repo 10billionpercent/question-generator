@@ -1,0 +1,55 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap");
+
+:root {
+  --color-brand: #e8470a;
+  --color-brand-hover: #d13e08;
+  --color-brand-light: #fdf0eb;
+
+  --sidebar-width: 330px;
+  --sidebar-bg: #ffffff;
+  --main-bg: #f0efed;
+
+  --card-bg: #ffffff;
+  --card-radius: 16px;
+  --card-border: 1px solid #e5e5e5;
+
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+
+  --font: "Bricolage Grotesque", sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--main-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font);
+  outline: none;
+}
