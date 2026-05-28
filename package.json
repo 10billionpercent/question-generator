@@ -11,10 +11,10 @@
     "start:combined": "concurrently \"pnpm start:backend\" \"pnpm start:worker\""
   },
   "dependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.2"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.11.0"
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
   }
 }
