@@ -1,13 +1,17 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
-import * as PdfParse from "pdf-parse-new";
+import path from "path";
 import { assignmentFormSchema, generationJobPayloadSchema } from "@veda/shared";
 import { AssignmentModel } from "../models/assignment.model";
-import { addGenerationJob } from "../queues/generation.queue";
+import { addExtractionJob } from "../queues/extraction.queue";
 import { getIO } from "../socket";
 
 const router: Router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: path.resolve(__dirname, "../../../uploads"),
+  }),
+});
 
 router.post(
   "/upload",
@@ -16,24 +20,6 @@ router.post(
     try {
       // Validate form fields
       const validatedForm = assignmentFormSchema.parse(req.body);
-
-      let extractedText: string | undefined;
-      if (req.file) {
-        if (req.file.mimetype === "application/pdf") {
-          // pdf-parse-new with native TS support — just pass the buffer
-          const result = await PdfParse.default(req.file.buffer);
-          extractedText = result.text;
-        } else if (
-          req.file.mimetype === "text/plain" ||
-          req.file.originalname.endsWith(".txt")
-        ) {
-          extractedText = req.file.buffer.toString("utf-8");
-        } else {
-          return res.status(400).json({
-            error: "Unsupported file type. Please upload a PDF or text file.",
-          });
-        }
-      }
 
       // Create assignment
       const assignment = await AssignmentModel.create({
@@ -45,11 +31,20 @@ router.post(
       const payload = generationJobPayloadSchema.parse({
         ...validatedForm,
         assignmentId: assignment._id.toString(),
-        uploadedContent: extractedText,
       });
 
-      // Enqueue job
-      const job = await addGenerationJob(payload);
+      // Enqueue extraction job
+      const job = await addExtractionJob({
+        assignmentId: assignment._id.toString(),
+        form: payload,
+        ...(req.file && {
+          file: {
+            path: req.file.path,
+            originalName: req.file.originalname,
+            mimetype: req.file.mimetype,
+          },
+        }),
+      });
 
       assignment.jobId = job.id;
       assignment.status = "generating";

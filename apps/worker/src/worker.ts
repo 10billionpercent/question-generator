@@ -13,8 +13,50 @@ import {
   emitFailed,
 } from "./services/socket-emitter";
 import { generatePdf } from "./services/pdf-generator";
+import { extractText } from "./services/extract-text";
+import { addGenerationJob } from "./queues/generation.queue";
 
 const connection = { url: config.redisUri };
+
+interface ExtractionJobPayload {
+  assignmentId: string;
+  form: GenerationJobPayload;
+  file?: {
+    path: string;
+    originalName: string;
+    mimetype: string;
+  };
+}
+
+const extractionWorker = new Worker<ExtractionJobPayload>(
+  "file-extraction",
+  async (job: Job<ExtractionJobPayload>) => {
+    console.log(`Processing extraction job ${job.id}`);
+
+    await emitProgress(job.id!, 5);
+
+    try {
+      const uploadedContent = await extractText(job.data.file);
+      await emitProgress(job.id!, 10);
+
+      await addGenerationJob(
+        {
+          ...job.data.form,
+          uploadedContent,
+        },
+        job.id!,
+      );
+
+      return { success: true };
+    } catch (error: any) {
+      console.error(`Extraction job ${job.id} failed:`, error);
+      await updateAssignmentStatus(job.data.assignmentId, "failed");
+      await emitFailed(job.id!, error.message || "Extraction failed");
+      throw error;
+    }
+  },
+  { connection, concurrency: 3 },
+);
 
 const worker = new Worker<GenerationJobPayload>(
   config.queueName,

@@ -96,6 +96,9 @@ importers:
       mongoose:
         specifier: ^8.1.0
         version: 8.24.0
+      pdf-parse-new:
+        specifier: ^2.1.0
+        version: 2.1.0
       playwright:
         specifier: ^1.60.0
         version: 1.60.0

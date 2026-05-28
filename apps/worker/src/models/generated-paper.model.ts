@@ -1,14 +1,23 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { GeneratedPaper } from "@veda/shared";
 
-export interface IGeneratedPaper extends GeneratedPaper, Document {
+export interface IGeneratedPaper extends Document {
   assignmentId: mongoose.Types.ObjectId;
   jobId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  subject: string;
+  classLevel: string;
+  timeAllowed: string;
+  maxMarks: number;
+  compulsoryNote: string;
+  sections: GeneratedPaper["sections"];
+  studentInfo?: GeneratedPaper["studentInfo"];
+  totalMarks?: number;
+  duration?: string;
   pdfUrl?: string;
   pdfData?: Buffer;
   institutionName?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const questionSchema = new Schema(
