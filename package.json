@@ -5,7 +5,8 @@
     "dev:backend": "pnpm --filter @veda/backend dev",
     "dev:worker": "pnpm --filter @veda/worker dev",
     "dev:all": "pnpm --parallel --filter @veda/backend --filter @veda/worker run dev",
-    "build": "pnpm --filter @veda/shared build && pnpm --filter @veda/backend build && pnpm --filter @veda/worker build"
+    "build": "pnpm --filter @veda/shared build && pnpm --filter @veda/backend build && pnpm --filter @veda/worker build",
+    "start": "pnpm --parallel --filter @veda/backend --filter @veda/worker start"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
