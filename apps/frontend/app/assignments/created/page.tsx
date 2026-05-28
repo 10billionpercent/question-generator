@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
@@ -17,7 +18,7 @@ interface Question {
   difficulty: string;
   marks: number;
   answerHint?: string;
-  options?: QuestionOption[]; // ✅ added for MCQs etc.
+  options?: QuestionOption[];
 }
 
 interface Section {
@@ -39,7 +40,6 @@ interface GeneratedPaper {
   pdfUrl?: string;
 }
 
-// Socket event types
 interface GenerationCompletedEvent {
   type: "generation_completed";
   jobId: string;
@@ -73,7 +73,7 @@ const renderDifficultyStars = (difficulty: string) => {
   ));
 };
 
-export default function CreatedAssignmentPage() {
+function CreatedAssignmentContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const paperId = searchParams.get("paperId");
@@ -84,7 +84,6 @@ export default function CreatedAssignmentPage() {
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
-  // Fetch paper data
   useEffect(() => {
     if (!paperId) {
       setError("No paper ID provided");
@@ -120,7 +119,6 @@ export default function CreatedAssignmentPage() {
     fetchPaper();
   }, [paperId]);
 
-  // Setup socket for PDF generation updates
   useEffect(() => {
     if (!paperId || loading) return;
 
@@ -308,7 +306,6 @@ export default function CreatedAssignmentPage() {
                     </span>{" "}
                     {q.text}{" "}
                     <span className="paper-qmarks">[{q.marks} Marks]</span>
-                    {/* ✅ Display options (MCQ choices) if present */}
                     {q.options && q.options.length > 0 && (
                       <div className="paper-options">
                         {q.options.map((opt, optIdx) => (
@@ -377,5 +374,30 @@ export default function CreatedAssignmentPage() {
         }
       `}</style>
     </>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <>
+      <TopBar title="Create New" showBack={false} />
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading your assignment...</p>
+      </div>
+      <style>{`
+        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e5e5e5; border-top-color: var(--color-brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </>
+  );
+}
+
+export default function CreatedAssignmentPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CreatedAssignmentContent />
+    </Suspense>
   );
 }
