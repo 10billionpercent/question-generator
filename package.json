@@ -8,7 +8,7 @@
     "build": "pnpm --filter @veda/shared build && pnpm --filter @veda/backend build && pnpm --filter @veda/worker build",
     "start:backend": "pnpm --filter @veda/backend start",
     "start:worker": "pnpm --filter @veda/worker start",
-    "start:combined": "concurrently \"pnpm start:backend\" \"pnpm start:worker\""
+    "start:combined": "concurrently -n backend,worker -c cyan,yellow \"pnpm start:backend\" \"pnpm start:worker\""
   },
   "dependencies": {
     "concurrently": "^8.2.2"
