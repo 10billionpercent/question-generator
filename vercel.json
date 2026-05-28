@@ -1,6 +1,0 @@
-{
-  "installCommand": "pnpm install --no-frozen-lockfile --ignore-scripts",
-  "buildCommand": "pnpm --filter @veda/frontend build",
-  "outputDirectory": "apps/frontend/.next",
-  "framework": "nextjs"
-}
