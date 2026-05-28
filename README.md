@@ -107,7 +107,7 @@ sequenceDiagram
     Worker-->>API: Publish progress (generating)
     API-->>FE: generation_progress (generating)
 
-    Queue->>Worker: Render PDF (Playwright)
+    Queue->>Worker: Render PDF (Browserless)
     Worker->>DB: Save PDF buffer
     Worker-->>API: Publish completed
     API-->>FE: generation_completed { paperId, pdfUrl }
@@ -119,22 +119,22 @@ sequenceDiagram
 
 ## Tech Stack
 
-| Layer              | Technology                                           |
-| ------------------ | ---------------------------------------------------- |
-| Frontend Framework | Next.js 14 (App Router) + TypeScript                 |
-| Styling            | CSS Modules + CSS Variables                          |
-| Runtime            | Node.js + TypeScript                                 |
-| API Framework      | Express                                              |
-| Database           | MongoDB (Mongoose)                                   |
-| Job Queue          | BullMQ (Redis)                                       |
-| AI                 | Google Gemini (`generative-ai` SDK)                  |
-| PDF Generation     | Handlebars + Playwright (local) / Browserless (prod) |
-| File Extraction    | pdf-parse-new                                        |
-| Authentication     | bcryptjs + jsonwebtoken                              |
-| Realtime           | Socket.IO + Redis Pub/Sub                            |
-| Storage (prod)     | MongoDB (GridFS-style Buffers)                       |
-| Package Manager    | pnpm                                                 |
-| Monorepo Tooling   | pnpm workspaces                                      |
+| Layer | Technology |
+|---|---|
+| Frontend Framework | Next.js 14 (App Router) + TypeScript |
+| Styling | CSS Modules + CSS Variables |
+| Runtime | Node.js + TypeScript |
+| API Framework | Express |
+| Database | MongoDB (Mongoose) |
+| Job Queue | BullMQ (Redis) |
+| AI | Google Gemini (`generative-ai` SDK) |
+| PDF Generation | Handlebars + Browserless |
+| File Extraction | pdf-parse-new |
+| Authentication | bcryptjs + jsonwebtoken |
+| Realtime | Socket.IO + Redis Pub/Sub |
+| Storage (prod) | MongoDB (GridFS-style Buffers) |
+| Package Manager | pnpm |
+| Monorepo Tooling | pnpm workspaces |
 
 ---
 
@@ -180,7 +180,7 @@ question-generator/
 - MongoDB (local or Atlas URI)
 - Redis (local or cloud)
 - Google Gemini API key — [get one free](https://aistudio.google.com/app/apikey)
-- _(Optional)_ Browserless API key for production PDFs — [browserless.io](https://www.browserless.io/)
+- *(Optional)* Browserless API key for production PDFs — [browserless.io](https://www.browserless.io/)
 
 ### Installation
 
@@ -262,11 +262,11 @@ pnpm --filter frontend dev         # Frontend → http://localhost:3000
 
 All endpoints accept an optional `Authorization: Bearer <token>` header. Guests can generate papers without signing in; signed-in users get papers linked to their account.
 
-| Method | Endpoint           | Description                 | Auth     |
-| ------ | ------------------ | --------------------------- | -------- |
-| POST   | `/api/auth/signup` | Create account              | none     |
-| POST   | `/api/auth/login`  | Login, returns JWT          | none     |
-| GET    | `/api/auth/me`     | Current user + their papers | required |
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/auth/signup` | Create account | none |
+| POST | `/api/auth/login` | Login, returns JWT | none |
+| GET | `/api/auth/me` | Current user + their papers | required |
 
 ```bash
 # Signup
@@ -286,25 +286,25 @@ curl -X POST http://localhost:4000/api/auth/login \
 
 Two endpoints depending on whether you have a file:
 
-| Method | Endpoint                 | Description              |
-| ------ | ------------------------ | ------------------------ |
-| POST   | `/api/generation/start`  | JSON-only, no file       |
-| POST   | `/api/generation/upload` | Multipart form with file |
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/generation/start` | JSON-only, no file |
+| POST | `/api/generation/upload` | Multipart form with file |
 
 **Request fields:**
 
-| Field                    | Type   | Notes                              |
-| ------------------------ | ------ | ---------------------------------- |
-| `title`                  | string | Subject/title — required           |
-| `classLevel`             | string | e.g. "BE 6th Sem"                  |
-| `institutionName`        | string | School/college name                |
-| `questionBreakdown`      | array  | Preferred — see format below       |
-| `totalQuestions`         | number | Used if no breakdown               |
-| `marksPerQuestion`       | number | Used if no breakdown               |
-| `questionTypes`          | array  | Used if no breakdown               |
-| `difficultyPreference`   | enum   | `easy` / `medium` / `hard`         |
-| `additionalInstructions` | string | Extra AI instructions              |
-| `file`                   | file   | PDF or .txt (upload endpoint only) |
+| Field | Type | Notes |
+|---|---|---|
+| `title` | string | Subject/title — required |
+| `classLevel` | string | e.g. "BE 6th Sem" |
+| `institutionName` | string | School/college name |
+| `questionBreakdown` | array | Preferred — see format below |
+| `totalQuestions` | number | Used if no breakdown |
+| `marksPerQuestion` | number | Used if no breakdown |
+| `questionTypes` | array | Used if no breakdown |
+| `difficultyPreference` | enum | `easy` / `medium` / `hard` |
+| `additionalInstructions` | string | Extra AI instructions |
+| `file` | file | PDF or .txt (upload endpoint only) |
 
 **`questionBreakdown` format:**
 
@@ -356,12 +356,12 @@ The `assignmentId` is used to track progress and fetch the final paper.
 
 ### Papers
 
-| Method | Endpoint                                      | Description                      |
-| ------ | --------------------------------------------- | -------------------------------- |
-| GET    | `/api/papers/:assignmentId`                   | Fetch generated paper (JSON)     |
-| POST   | `/api/papers/:assignmentId/pdf`               | Trigger PDF generation           |
-| GET    | `/api/papers/by-assignment/:assignmentId/pdf` | Download PDF (frontend-friendly) |
-| GET    | `/api/papers/:paperId/pdf`                    | Serve PDF from DB (production)   |
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/papers/:assignmentId` | Fetch generated paper (JSON) |
+| POST | `/api/papers/:assignmentId/pdf` | Trigger PDF generation |
+| GET | `/api/papers/by-assignment/:assignmentId/pdf` | Download PDF (frontend-friendly) |
+| GET | `/api/papers/:paperId/pdf` | Serve PDF from DB (production) |
 
 ```bash
 # Fetch paper JSON
@@ -378,10 +378,10 @@ curl -J -O http://localhost:4000/api/papers/6a186c9c594164c6efe8bc1a/pdf
 
 ## Frontend Pages & Routes
 
-| Route                              | Description                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------- |
-| `/`                                | Dashboard — lists all assignments, filterable by title                            |
-| `/assignments/create`              | Form to configure and upload a new assignment                                     |
+| Route | Description |
+|---|---|
+| `/` | Dashboard — lists all assignments, filterable by title |
+| `/assignments/create` | Form to configure and upload a new assignment |
 | `/assignments/created?paperId=...` | Full paper preview with sections, marks, difficulty, answer key, and PDF download |
 
 ### `assignmentService.ts` exports
@@ -405,11 +405,11 @@ socket.emit("subscribe_to_assignment", assignmentId);
 
 **Events:**
 
-| Event                  | Payload                                      | Action                              |
-| ---------------------- | -------------------------------------------- | ----------------------------------- |
-| `generation_progress`  | `{ stage, message, progress, assignmentId }` | Update progress bar                 |
-| `generation_completed` | `{ assignmentId, paperId, paper, pdfUrl }`   | Redirect to preview / auto-download |
-| `generation_failed`    | `{ assignmentId, error }`                    | Show error message                  |
+| Event | Payload | Action |
+|---|---|---|
+| `generation_progress` | `{ stage, message, progress, assignmentId }` | Update progress bar |
+| `generation_completed` | `{ assignmentId, paperId, paper, pdfUrl }` | Redirect to preview / auto-download |
+| `generation_failed` | `{ assignmentId, error }` | Show error message |
 
 ---
 
