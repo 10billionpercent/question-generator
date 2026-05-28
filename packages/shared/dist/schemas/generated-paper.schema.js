@@ -1,12 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generatedPaperSchema = exports.studentInfoSchema = exports.sectionSchema = exports.questionSchema = void 0;
+exports.generatedPaperSchema = exports.studentInfoSchema = exports.sectionSchema = exports.questionSchema = exports.questionOptionSchema = void 0;
 const zod_1 = require("zod");
+exports.questionOptionSchema = zod_1.z.object({
+    label: zod_1.z.string(), // e.g. "a", "b", "c", "d"
+    text: zod_1.z.string(),
+});
 exports.questionSchema = zod_1.z.object({
     text: zod_1.z.string(),
     difficulty: zod_1.z.enum(["Easy", "Medium", "Difficult"]),
     marks: zod_1.z.number().positive(),
     answerHint: zod_1.z.string().optional(),
+    options: zod_1.z.array(exports.questionOptionSchema).optional(), // for MCQs
 });
 exports.sectionSchema = zod_1.z.object({
     title: zod_1.z.string(),

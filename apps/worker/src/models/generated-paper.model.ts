@@ -31,6 +31,13 @@ const questionSchema = new Schema(
     },
     marks: { type: Number, required: true },
     answerHint: { type: String, required: false },
+    options: [
+      {
+        label: { type: String },
+        text: { type: String },
+        _id: false, // don't create separate IDs for each option
+      },
+    ],
   },
   { _id: false },
 );

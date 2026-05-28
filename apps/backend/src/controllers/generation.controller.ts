@@ -7,43 +7,72 @@ import { getIO } from "../socket";
 export const createGenerationJob = async (req: Request, res: Response) => {
   try {
     const validatedForm = assignmentFormSchema.parse(req.body);
+
+    // Determine total questions and marks
+    let totalQuestions: number = 0;
+    let marksPerQuestion: number = 0;
+    let questionBreakdown = validatedForm.questionBreakdown;
+
+    if (questionBreakdown && questionBreakdown.length > 0) {
+      totalQuestions = questionBreakdown.reduce(
+        (sum, item) => sum + item.count,
+        0,
+      );
+      marksPerQuestion = questionBreakdown[0].marks;
+    } else if (
+      validatedForm.questionTypes &&
+      validatedForm.questionTypes.length > 0 &&
+      validatedForm.totalQuestions &&
+      validatedForm.marksPerQuestion
+    ) {
+      // convert old flat format
+      questionBreakdown = validatedForm.questionTypes.map((type) => ({
+        type,
+        count: Math.ceil(
+          validatedForm.totalQuestions! / validatedForm.questionTypes!.length,
+        ),
+        marks: validatedForm.marksPerQuestion!,
+      }));
+      totalQuestions = validatedForm.totalQuestions;
+      marksPerQuestion = validatedForm.marksPerQuestion;
+    }
+
     const form = {
       ...validatedForm,
       institutionName:
         validatedForm.institutionName || req.authUser?.institutionName,
+      totalQuestions,
+      marksPerQuestion,
+      questionBreakdown,
     };
 
-    // Save assignment with pending status
     const assignment = await AssignmentModel.create({
       ...form,
       userId: req.authUser?.userId,
       status: "pending",
     });
 
-    // Extract uploaded content if present (simplified: in real app parse PDF)
     const payload = generationJobPayloadSchema.parse({
       ...form,
       assignmentId: assignment._id.toString(),
       userId: req.authUser?.userId,
-      uploadedContent: undefined, // will be filled if file upload exists
+      uploadedContent: undefined,
     });
 
-    // Add to queue
     const job = await addGenerationJob(payload);
-
-    // Update assignment with job id
     assignment.jobId = job.id;
     assignment.status = "generating";
     await assignment.save();
 
-    // Notify via WebSocket (optional: room for this assignment)
     const jobId = job.id!;
     getIO().to(`job:${jobId}`).emit("generation_started", { jobId });
-    return res.status(201).json({
-      message: "Generation job created",
-      jobId: job.id,
-      assignmentId: assignment._id,
-    });
+    return res
+      .status(201)
+      .json({
+        message: "Generation job created",
+        jobId,
+        assignmentId: assignment._id,
+      });
   } catch (error: any) {
     if (error.issues) {
       return res

@@ -1,10 +1,16 @@
 import { z } from "zod";
 
+export const questionOptionSchema = z.object({
+  label: z.string(), // e.g. "a", "b", "c", "d"
+  text: z.string(),
+});
+
 export const questionSchema = z.object({
   text: z.string(),
   difficulty: z.enum(["Easy", "Medium", "Difficult"]),
   marks: z.number().positive(),
   answerHint: z.string().optional(),
+  options: z.array(questionOptionSchema).optional(), // for MCQs
 });
 
 export const sectionSchema = z.object({

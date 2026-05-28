@@ -28,13 +28,28 @@ function calculateTime(totalQ: number, marksPerQ: number): string {
 function getPrompt(payload: GenerationJobPayload): string {
   const {
     title,
-    totalQuestions,
-    marksPerQuestion,
+    totalQuestions: rawTotal = 0,
+    marksPerQuestion: rawMarks = 0,
     difficultyPreference,
     additionalInstructions,
     uploadedContent,
     classLevel,
+    questionBreakdown,
   } = payload;
+
+  const totalQuestions = rawTotal || 0;
+  const marksPerQuestion = rawMarks || 0;
+
+  // Build section instructions from breakdown
+  let sectionInstructions = "";
+  if (questionBreakdown && questionBreakdown.length > 0) {
+    sectionInstructions = `**Question Breakdown:**\n${questionBreakdown
+      .map(
+        (item, idx) =>
+          `- Section ${String.fromCharCode(65 + idx)}: ${item.type} – ${item.count} questions, ${item.marks} marks each`,
+      )
+      .join("\n")}\n\n`;
+  }
 
   const difficultyMap: Record<string, string[]> = {
     easy: ["Easy"],
@@ -48,38 +63,54 @@ You are an expert exam paper creator. Generate a question paper that exactly mat
 
 **User provided title:** "${title}"
 **User provided class level:** ${classLevel || "(not specified)"}
+${sectionInstructions}
 **Total Questions:** ${totalQuestions}
-**Marks per Question:** ${marksPerQuestion}
+**Marks per Question:** ${marksPerQuestion} (used as default if not specified per section)
 **Difficulty Preference:** ${difficultyPreference || "medium"} (choose from ${allowedDifficulties.join(", ")})
 **Additional Instructions:** ${additionalInstructions || "None"}
 ${uploadedContent ? `**Study Material / Content:**\n"${uploadedContent}"\n` : ""}
 
 **IMPORTANT:**
-- If the user's title does not clearly identify a subject (e.g., "Question Paper from Upload", "Test", "Exam"), **analyze the provided study material and generate a concise, meaningful subject** (e.g., "Data Structures", "Ancient Civilizations").
-- If the user's class level is missing or vague, **infer an appropriate class level** from the study material or default to "General".
-- The questions MUST be based on the study material if provided, otherwise on the title.
+- You MUST create exactly one section for each item in the Question Breakdown above.
+- The number of questions in each section MUST match the count given, and each question MUST have exactly the marks specified for that section.
+- The **type** field in the section should be derived from the breakdown (e.g., "Multiple Choice Questions", "Short Answer Questions").
+- The **instruction** should reflect the marks per question.
 - Every question MUST include an "answerHint" – a short answer or key point (1-2 sentences).
 
-Output **only valid JSON** (no markdown, no extra text) following this exact schema:
+**For multiple‑choice questions, every question object MUST contain an
+"options" array with exactly 4 items.**
+
+Example of a complete MCQ question object:
+{
+  "text": "What is the capital of France?",
+  "difficulty": "Easy",
+  "marks": 1,
+  "answerHint": "Paris",
+  "options": [
+    { "label": "a", "text": "London" },
+    { "label": "b", "text": "Berlin" },
+    { "label": "c", "text": "Paris" },
+    { "label": "d", "text": "Madrid" }
+  ]
+}
+
+For non‑MCQ questions, "options" should be omitted or an empty array.
+
+Output **only valid JSON** (no markdown, no extra text) following this schema:
 
 {
-  "subject": "string (e.g., English, React Hooks)",
-  "classLevel": "string (e.g., 5th, BE 6th Sem, General)",
-  "timeAllowed": "string (e.g., 45 minutes)",
-  "maxMarks": number (total marks = ${totalQuestions} * ${marksPerQuestion} = ${totalQuestions * marksPerQuestion}),
-  "compulsoryNote": "string (e.g., 'All questions are compulsory unless stated otherwise.')",
+  "subject": "string",
+  "classLevel": "string",
+  "timeAllowed": "string",
+  "maxMarks": number (sum of all section marks),
+  "compulsoryNote": "string",
   "sections": [
     {
       "title": "Section A",
-      "type": "Short Answer Questions",
-      "instruction": "Attempt all questions. Each question carries ${marksPerQuestion} marks",
+      "type": "...",
+      "instruction": "Attempt all questions. Each question carries X marks",
       "questions": [
-        {
-          "text": "Question text here",
-          "difficulty": "Easy" | "Medium" | "Difficult",
-          "marks": number (must equal ${marksPerQuestion}),
-          "answerHint": "brief answer explanation"
-        }
+        { "text": "...", "difficulty": "Easy"|"Medium"|"Difficult", "marks": X, "answerHint": "..." , "options": [....]}
       ]
     }
   ]
@@ -89,7 +120,7 @@ Output **only valid JSON** (no markdown, no extra text) following this exact sch
 - You may create 1 to 3 sections. Distribute the ${totalQuestions} questions evenly across sections.
 - Each question must have **difficulty** one of: Easy, Medium, Difficult. Use the allowed difficulties: ${allowedDifficulties.join(", ")}.
 - Each question must have **marks** exactly ${marksPerQuestion}.
-- Each question must include an **"answerHint"**.
+- Each question must include an **"answerHint"**. You MUST give 4 options if the question is multiple choice.
 - The **instruction** in each section must mention the marks per question (e.g., "Each question carries ${marksPerQuestion} marks").
 - The **type** field should describe the question style (e.g., "Short Answer Questions", "Long Answer", "Multiple Choice").
 - The **timeAllowed** should be reasonable (e.g., 45 minutes for 20 marks).
@@ -115,6 +146,7 @@ async function tryGenerate(
     }),
   ]);
   const text = result.response.text();
+  console.log("Raw AI response text:", text);
   const jsonText = text.replace(/```json|```/g, "").trim();
   const parsed = JSON.parse(jsonText);
   return generatedPaperSchema.parse(parsed);
@@ -145,9 +177,13 @@ export async function generatePaperWithFallback(
         classLevel: paper.classLevel || "General",
         timeAllowed:
           paper.timeAllowed ||
-          calculateTime(payload.totalQuestions, payload.marksPerQuestion),
+          calculateTime(
+            payload.totalQuestions || 0,
+            payload.marksPerQuestion || 0,
+          ),
         maxMarks:
-          paper.maxMarks || payload.totalQuestions * payload.marksPerQuestion,
+          paper.maxMarks ||
+          (payload.totalQuestions || 0) * (payload.marksPerQuestion || 0),
         compulsoryNote:
           paper.compulsoryNote ||
           "All questions are compulsory unless stated otherwise.",

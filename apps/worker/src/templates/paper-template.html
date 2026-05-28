@@ -193,14 +193,20 @@
         {{#each this.questions}}
         <div class="question">
           <span class="question-number"> {{inc @index}}. </span>
-
           <span class="question-content">
             <span class="difficulty"> [{{this.difficulty}}] </span>
-
             {{this.text}}
-
             <span class="marks"> [{{this.marks}} Marks] </span>
           </span>
+          {{#if this.options}}
+          <div style="margin-top: 4px">
+            {{#each this.options}}
+            <div style="margin-left: 32px; font-size: 14px">
+              {{this.label}}) {{this.text}}
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
         </div>
         {{/each}}
       </div>

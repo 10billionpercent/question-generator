@@ -1,18 +1,46 @@
 import { z } from "zod";
+export declare const questionOptionSchema: z.ZodObject<{
+    label: z.ZodString;
+    text: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    label: string;
+    text: string;
+}, {
+    label: string;
+    text: string;
+}>;
 export declare const questionSchema: z.ZodObject<{
     text: z.ZodString;
     difficulty: z.ZodEnum<["Easy", "Medium", "Difficult"]>;
     marks: z.ZodNumber;
     answerHint: z.ZodOptional<z.ZodString>;
+    options: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        label: z.ZodString;
+        text: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        label: string;
+        text: string;
+    }, {
+        label: string;
+        text: string;
+    }>, "many">>;
 }, "strip", z.ZodTypeAny, {
+    marks: number;
     text: string;
     difficulty: "Easy" | "Medium" | "Difficult";
-    marks: number;
+    options?: {
+        label: string;
+        text: string;
+    }[] | undefined;
     answerHint?: string | undefined;
 }, {
+    marks: number;
     text: string;
     difficulty: "Easy" | "Medium" | "Difficult";
-    marks: number;
+    options?: {
+        label: string;
+        text: string;
+    }[] | undefined;
     answerHint?: string | undefined;
 }>;
 export declare const sectionSchema: z.ZodObject<{
@@ -24,15 +52,33 @@ export declare const sectionSchema: z.ZodObject<{
         difficulty: z.ZodEnum<["Easy", "Medium", "Difficult"]>;
         marks: z.ZodNumber;
         answerHint: z.ZodOptional<z.ZodString>;
+        options: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            label: z.ZodString;
+            text: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            label: string;
+            text: string;
+        }, {
+            label: string;
+            text: string;
+        }>, "many">>;
     }, "strip", z.ZodTypeAny, {
+        marks: number;
         text: string;
         difficulty: "Easy" | "Medium" | "Difficult";
-        marks: number;
+        options?: {
+            label: string;
+            text: string;
+        }[] | undefined;
         answerHint?: string | undefined;
     }, {
+        marks: number;
         text: string;
         difficulty: "Easy" | "Medium" | "Difficult";
-        marks: number;
+        options?: {
+            label: string;
+            text: string;
+        }[] | undefined;
         answerHint?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
@@ -40,9 +86,13 @@ export declare const sectionSchema: z.ZodObject<{
     title: string;
     instruction: string;
     questions: {
+        marks: number;
         text: string;
         difficulty: "Easy" | "Medium" | "Difficult";
-        marks: number;
+        options?: {
+            label: string;
+            text: string;
+        }[] | undefined;
         answerHint?: string | undefined;
     }[];
 }, {
@@ -50,9 +100,13 @@ export declare const sectionSchema: z.ZodObject<{
     title: string;
     instruction: string;
     questions: {
+        marks: number;
         text: string;
         difficulty: "Easy" | "Medium" | "Difficult";
-        marks: number;
+        options?: {
+            label: string;
+            text: string;
+        }[] | undefined;
         answerHint?: string | undefined;
     }[];
 }>;
@@ -84,15 +138,33 @@ export declare const generatedPaperSchema: z.ZodObject<{
             difficulty: z.ZodEnum<["Easy", "Medium", "Difficult"]>;
             marks: z.ZodNumber;
             answerHint: z.ZodOptional<z.ZodString>;
+            options: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                label: z.ZodString;
+                text: z.ZodString;
+            }, "strip", z.ZodTypeAny, {
+                label: string;
+                text: string;
+            }, {
+                label: string;
+                text: string;
+            }>, "many">>;
         }, "strip", z.ZodTypeAny, {
+            marks: number;
             text: string;
             difficulty: "Easy" | "Medium" | "Difficult";
-            marks: number;
+            options?: {
+                label: string;
+                text: string;
+            }[] | undefined;
             answerHint?: string | undefined;
         }, {
+            marks: number;
             text: string;
             difficulty: "Easy" | "Medium" | "Difficult";
-            marks: number;
+            options?: {
+                label: string;
+                text: string;
+            }[] | undefined;
             answerHint?: string | undefined;
         }>, "many">;
     }, "strip", z.ZodTypeAny, {
@@ -100,9 +172,13 @@ export declare const generatedPaperSchema: z.ZodObject<{
         title: string;
         instruction: string;
         questions: {
+            marks: number;
             text: string;
             difficulty: "Easy" | "Medium" | "Difficult";
-            marks: number;
+            options?: {
+                label: string;
+                text: string;
+            }[] | undefined;
             answerHint?: string | undefined;
         }[];
     }, {
@@ -110,9 +186,13 @@ export declare const generatedPaperSchema: z.ZodObject<{
         title: string;
         instruction: string;
         questions: {
+            marks: number;
             text: string;
             difficulty: "Easy" | "Medium" | "Difficult";
-            marks: number;
+            options?: {
+                label: string;
+                text: string;
+            }[] | undefined;
             answerHint?: string | undefined;
         }[];
     }>, "many">;
@@ -144,9 +224,13 @@ export declare const generatedPaperSchema: z.ZodObject<{
         title: string;
         instruction: string;
         questions: {
+            marks: number;
             text: string;
             difficulty: "Easy" | "Medium" | "Difficult";
-            marks: number;
+            options?: {
+                label: string;
+                text: string;
+            }[] | undefined;
             answerHint?: string | undefined;
         }[];
     }[];
@@ -170,9 +254,13 @@ export declare const generatedPaperSchema: z.ZodObject<{
         title: string;
         instruction: string;
         questions: {
+            marks: number;
             text: string;
             difficulty: "Easy" | "Medium" | "Difficult";
-            marks: number;
+            options?: {
+                label: string;
+                text: string;
+            }[] | undefined;
             answerHint?: string | undefined;
         }[];
     }[];

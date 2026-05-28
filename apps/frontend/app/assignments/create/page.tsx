@@ -10,6 +10,7 @@ import {
   AssignmentFormData,
 } from "@/services/assignmentService";
 import { GeneratedPaper } from "@veda/shared";
+import styles from "../CreateAssignmentPage.module.css";
 
 // Socket event types
 interface GenerationProgressEvent {
@@ -304,29 +305,31 @@ export default function CreateAssignmentPage() {
   return (
     <>
       <TopBar title="Assignment" />
-      <div className="create-page">
-        <div className="create-header">
-          <div className="create-header-title-row">
-            <span className="create-status-dot" />
+      <div className={styles["create-page"]}>
+        <div className={styles["create-header"]}>
+          <div className={styles["create-header-title-row"]}>
+            <span className={styles["create-status-dot"]} />
             <div>
-              <h1 className="create-title">Create Assignment</h1>
-              <p className="create-subtitle">
+              <h1 className={styles["create-title"]}>Create Assignment</h1>
+              <p className={styles["create-subtitle"]}>
                 Set up a new assignment for your students
               </p>
             </div>
           </div>
-          <div className="progress-bar-wrap">
-            <div className="progress-bar" />
+          <div className={styles["progress-bar-wrap"]}>
+            <div className={styles["progress-bar"]} />
           </div>
         </div>
 
-        <div className="create-card">
-          <h2 className="section-title">Assignment Details</h2>
-          <p className="section-sub">Basic information about your assignment</p>
+        <div className={styles["create-card"]}>
+          <h2 className={styles["section-title"]}>Assignment Details</h2>
+          <p className={styles["section-sub"]}>
+            Basic information about your assignment
+          </p>
 
           {/* File Upload */}
           <div
-            className={`file-upload ${dragOver ? "drag-over" : ""} ${uploadedFile ? "has-file" : ""}`}
+            className={`${styles["file-upload"]} ${dragOver ? styles["drag-over"] : ""} ${uploadedFile ? styles["has-file"] : ""}`}
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);
@@ -346,7 +349,7 @@ export default function CreateAssignmentPage() {
               }}
             />
             {uploadedFile ? (
-              <div className="upload-success">
+              <div className={styles["upload-success"]}>
                 <svg
                   width="28"
                   height="28"
@@ -357,11 +360,13 @@ export default function CreateAssignmentPage() {
                 >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                <span className="upload-filename">{uploadedFile.name}</span>
+                <span className={styles["upload-filename"]}>
+                  {uploadedFile.name}
+                </span>
               </div>
             ) : (
               <>
-                <div className="upload-icon">
+                <div className={styles["upload-icon"]}>
                   <svg
                     width="28"
                     height="28"
@@ -375,12 +380,14 @@ export default function CreateAssignmentPage() {
                     <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
                   </svg>
                 </div>
-                <p className="upload-main">
+                <p className={styles["upload-main"]}>
                   Choose a file or drag &amp; drop it here
                 </p>
-                <p className="upload-hint">PDF, TXT, JPEG, PNG up to 10MB</p>
+                <p className={styles["upload-hint"]}>
+                  PDF, TXT, JPEG, PNG up to 10MB
+                </p>
                 <button
-                  className="browse-btn"
+                  className={styles["browse-btn"]}
                   onClick={(e) => {
                     e.stopPropagation();
                     fileInputRef.current?.click();
@@ -391,20 +398,25 @@ export default function CreateAssignmentPage() {
               </>
             )}
           </div>
-          <p className="upload-caption">Upload study material (PDF or text)</p>
+          <p className={styles["upload-caption"]}>
+            Upload study material (PDF or text)
+          </p>
 
           {/* Due Date */}
-          <div className="field-group">
-            <label className="field-label">Due Date</label>
-            <div className="date-input-wrap">
+          <div className={styles["field-group"]}>
+            <label className={styles["field-label"]}>Due Date</label>
+            <div className={styles["date-input-wrap"]}>
               <input
                 type="text"
-                className="date-input"
+                className={styles["date-input"]}
                 placeholder="DD-MM-YYYY"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
               />
-              <button className="date-icon-btn" aria-label="Pick date">
+              <button
+                className={styles["date-icon-btn"]}
+                aria-label="Pick date"
+              >
                 <svg
                   width="18"
                   height="18"
@@ -423,17 +435,17 @@ export default function CreateAssignmentPage() {
           </div>
 
           {/* Question Types table */}
-          <div className="qt-section">
-            <div className="qt-header-row">
-              <span className="qt-col-type">Question Type</span>
-              <span className="qt-col-num">No. of Questions</span>
-              <span className="qt-col-marks">Marks</span>
+          <div className={styles["qt-section"]}>
+            <div className={styles["qt-header-row"]}>
+              <span className={styles["qt-col-type"]}>Question Type</span>
+              <span className={styles["qt-col-num"]}>No. of Questions</span>
+              <span className={styles["qt-col-marks"]}>Marks</span>
             </div>
             {questionRows.map((row) => (
-              <div key={row.id} className="qt-row">
-                <div className="qt-type-wrap">
+              <div key={row.id} className={styles["qt-row"]}>
+                <div className={styles["qt-type-wrap"]}>
                   <select
-                    className="qt-type-select"
+                    className={styles["qt-type-select"]}
                     value={row.type}
                     onChange={(e) => updateRow(row.id, "type", e.target.value)}
                   >
@@ -450,13 +462,13 @@ export default function CreateAssignmentPage() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    className="qt-select-arrow"
+                    className={styles["qt-select-arrow"]}
                   >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </div>
                 <button
-                  className="qt-remove-btn"
+                  className={styles["qt-remove-btn"]}
                   onClick={() => removeRow(row.id)}
                   aria-label="Remove"
                 >
@@ -472,35 +484,37 @@ export default function CreateAssignmentPage() {
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
-                <div className="qt-stepper">
+                <div className={styles["qt-stepper"]}>
                   <button
                     type="button"
-                    className="qt-step-btn"
+                    className={styles["qt-step-btn"]}
                     onClick={() => decrement(row.id, "numQuestions")}
                   >
                     −
                   </button>
-                  <span className="qt-step-val">{row.numQuestions}</span>
+                  <span className={styles["qt-step-val"]}>
+                    {row.numQuestions}
+                  </span>
                   <button
                     type="button"
-                    className="qt-step-btn"
+                    className={styles["qt-step-btn"]}
                     onClick={() => increment(row.id, "numQuestions")}
                   >
                     +
                   </button>
                 </div>
-                <div className="qt-stepper">
+                <div className={styles["qt-stepper"]}>
                   <button
                     type="button"
-                    className="qt-step-btn"
+                    className={styles["qt-step-btn"]}
                     onClick={() => decrement(row.id, "marks")}
                   >
                     −
                   </button>
-                  <span className="qt-step-val">{row.marks}</span>
+                  <span className={styles["qt-step-val"]}>{row.marks}</span>
                   <button
                     type="button"
-                    className="qt-step-btn"
+                    className={styles["qt-step-btn"]}
                     onClick={() => increment(row.id, "marks")}
                   >
                     +
@@ -508,8 +522,8 @@ export default function CreateAssignmentPage() {
                 </div>
               </div>
             ))}
-            <button className="qt-add-btn" onClick={addRow}>
-              <span className="qt-add-icon">
+            <button className={styles["qt-add-btn"]} onClick={addRow}>
+              <span className={styles["qt-add-icon"]}>
                 <svg
                   width="16"
                   height="16"
@@ -524,7 +538,7 @@ export default function CreateAssignmentPage() {
               </span>
               Add Question Type
             </button>
-            <div className="qt-totals">
+            <div className={styles["qt-totals"]}>
               <span>
                 Total Questions : <strong>{totalQuestions}</strong>
               </span>
@@ -535,20 +549,22 @@ export default function CreateAssignmentPage() {
           </div>
 
           {/* Additional Info */}
-          <div className="field-group">
-            <label className="field-label">
+          <div className={styles["field-group"]}>
+            <label className={styles["field-label"]}>
               Additional Information{" "}
-              <span className="field-label-hint">(For better output)</span>
+              <span className={styles["field-label-hint"]}>
+                (For better output)
+              </span>
             </label>
-            <div className="textarea-wrap">
+            <div className={styles["textarea-wrap"]}>
               <textarea
-                className="additional-textarea"
+                className={styles["additional-textarea"]}
                 placeholder="e.g Generate a question paper for 3 hour exam duration..."
                 value={additionalInfo}
                 onChange={(e) => setAdditionalInfo(e.target.value)}
                 rows={3}
               />
-              <button className="mic-btn" aria-label="Voice input">
+              <button className={styles["mic-btn"]} aria-label="Voice input">
                 <svg
                   width="18"
                   height="18"
@@ -568,16 +584,16 @@ export default function CreateAssignmentPage() {
 
           {/* Real-time status display */}
           {isSubmitting && (
-            <div className="status-card">
-              <div className="status-spinner"></div>
-              <div className="status-text">
+            <div className={styles["status-card"]}>
+              <div className={styles["status-spinner"]}></div>
+              <div className={styles["status-text"]}>
                 <strong>{progressMessage}</strong>
-                <span className="status-stage">{status}</span>
+                <span className={styles["status-stage"]}>{status}</span>
               </div>
             </div>
           )}
           {errorMsg && (
-            <div className="error-message">
+            <div className={styles["error-message"]}>
               <svg
                 width="18"
                 height="18"
@@ -594,15 +610,18 @@ export default function CreateAssignmentPage() {
             </div>
           )}
           {status === "completed" && pdfUrl && (
-            <div className="success-card">
+            <div className={styles["success-card"]}>
               <p>✅ Assignment generated successfully!</p>
-              <div className="success-buttons">
-                <button onClick={handleDownload} className="download-btn">
+              <div className={styles["success-buttons"]}>
+                <button
+                  onClick={handleDownload}
+                  className={styles["download-btn"]}
+                >
                   📄 Download PDF
                 </button>
                 <button
                   onClick={handleGoToAssignments}
-                  className="dashboard-btn"
+                  className={styles["dashboard-btn"]}
                 >
                   Go to Dashboard
                 </button>
@@ -612,9 +631,9 @@ export default function CreateAssignmentPage() {
         </div>
 
         {status !== "completed" && (
-          <div className="create-nav">
+          <div className={styles["create-nav"]}>
             <button
-              className="nav-prev-btn"
+              className={styles["nav-prev-btn"]}
               onClick={() => router.back()}
               disabled={isSubmitting}
             >
@@ -632,7 +651,7 @@ export default function CreateAssignmentPage() {
               Previous
             </button>
             <button
-              className="nav-next-btn"
+              className={styles["nav-next-btn"]}
               onClick={handleNext}
               disabled={isSubmitting}
             >
@@ -654,146 +673,6 @@ export default function CreateAssignmentPage() {
           </div>
         )}
       </div>
-
-      <style>{`
-        .create-page {
-          max-width: 800px;
-          margin: 0 auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-        .create-header {
-          margin-bottom: 0;
-        }
-        .create-header-title-row {
-          display: none;
-        }
-        .progress-bar-wrap {
-          height: 5px;
-          background: #e5e5e5;
-          border-radius: 4px;
-          margin-bottom: 24px;
-          overflow: hidden;
-        }
-        .progress-bar {
-          height: 100%;
-          width: 55%;
-          background: var(--text-primary);
-          border-radius: 4px;
-        }
-        .create-card {
-          background: white;
-          border-radius: 20px;
-          border: 1px solid #e5e5e5;
-          padding: 32px;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-        .section-title {
-          font-size: 20px;
-          font-weight: 700;
-          color: var(--text-primary);
-          letter-spacing: -0.3px;
-          margin-bottom: 0;
-        }
-        .section-sub {
-          font-size: 13px;
-          color: var(--text-secondary);
-          margin-top: -18px;
-        }
-        .file-upload {
-          border: 2px dashed #d5d5d5;
-          border-radius: 14px;
-          padding: 36px 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-          transition: border-color 0.15s, background 0.15s;
-          background: #fafafa;
-        }
-        .file-upload:hover, .file-upload.drag-over {
-          border-color: var(--color-brand);
-          background: var(--color-brand-light);
-        }
-        .file-upload.has-file {
-          border-color: #22c55e;
-          background: #f0fdf4;
-        }
-        .upload-icon { color: var(--text-tertiary); margin-bottom: 4px; }
-        .upload-main { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-        .upload-hint { font-size: 12px; color: var(--text-tertiary); }
-        .browse-btn {
-          margin-top: 6px;
-          background: white;
-          border: 1px solid #d5d5d5;
-          border-radius: 8px;
-          padding: 8px 20px;
-          font-size: 13px;
-          font-weight: 600;
-          font-family: var(--font);
-          color: var(--text-primary);
-          cursor: pointer;
-        }
-        .browse-btn:hover { background: #f5f5f5; }
-        .upload-success { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .upload-filename { font-size: 14px; font-weight: 600; color: #16a34a; }
-        .upload-caption { font-size: 12px; color: var(--text-tertiary); text-align: center; margin-top: -16px; }
-        .field-group { display: flex; flex-direction: column; gap: 8px; }
-        .field-label { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-        .field-label-hint { font-weight: 400; color: var(--text-secondary); font-size: 13px; }
-        .date-input-wrap { display: flex; align-items: center; background: white; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
-        .date-input { flex: 1; border: none; padding: 13px 16px; font-size: 14px; color: var(--text-tertiary); font-family: var(--font); background: transparent; }
-        .date-icon-btn { width: 44px; height: 44px; background: transparent; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); flex-shrink: 0; }
-        .qt-section { display: flex; flex-direction: column; gap: 10px; }
-        .qt-header-row { display: grid; grid-template-columns: 1fr 130px 100px; gap: 8px; padding: 0 8px; font-size: 13px; font-weight: 700; color: var(--text-primary); }
-        .qt-row { display: grid; grid-template-columns: 1fr 28px 130px 100px; gap: 8px; align-items: center; }
-        .qt-type-wrap { position: relative; display: flex; align-items: center; }
-        .qt-type-select { width: 100%; appearance: none; border: 1px solid #e0e0e0; border-radius: 10px; padding: 11px 36px 11px 14px; font-size: 13px; font-weight: 500; font-family: var(--font); color: var(--text-primary); background: white; cursor: pointer; }
-        .qt-select-arrow { position: absolute; right: 12px; color: var(--text-secondary); pointer-events: none; }
-        .qt-remove-btn { width: 28px; height: 28px; background: transparent; border: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); }
-        .qt-remove-btn:hover { background: #fee2e2; color: #dc2626; }
-        .qt-stepper { display: flex; align-items: center; gap: 0; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; background: white; }
-        .qt-step-btn { width: 34px; height: 40px; background: transparent; border: none; font-size: 18px; font-weight: 400; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .qt-step-btn:hover { background: #f5f5f5; }
-        .qt-step-val { flex: 1; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-primary); border-left: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; min-width: 28px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .qt-add-btn { display: flex; align-items: center; gap: 10px; background: transparent; border: none; font-size: 14px; font-weight: 600; font-family: var(--font); color: var(--text-primary); cursor: pointer; padding: 4px 0; width: fit-content; }
-        .qt-add-icon { width: 32px; height: 32px; background: var(--text-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .qt-totals { display: flex; justify-content: flex-end; gap: 24px; font-size: 14px; color: var(--text-secondary); padding-top: 4px; }
-        .qt-totals strong { color: var(--text-primary); }
-        .textarea-wrap { position: relative; }
-        .additional-textarea { width: 100%; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 48px 14px 16px; font-size: 13px; color: var(--text-primary); font-family: var(--font); resize: none; background: white; line-height: 1.6; }
-        .mic-btn { position: absolute; bottom: 12px; right: 14px; width: 28px; height: 28px; background: transparent; border: none; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; border-radius: 6px; }
-        .mic-btn:hover { background: #f0f0f0; }
-        .create-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
-        .nav-prev-btn { display: flex; align-items: center; gap: 8px; background: white; border: 1.5px solid #d5d5d5; border-radius: 50px; padding: 12px 24px; font-size: 15px; font-weight: 600; font-family: var(--font); color: var(--text-primary); cursor: pointer; }
-        .nav-next-btn { display: flex; align-items: center; gap: 8px; background: var(--text-primary); color: white; border: none; border-radius: 50px; padding: 12px 28px; font-size: 15px; font-weight: 600; font-family: var(--font); cursor: pointer; }
-        .nav-next-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .status-card { background: #f8fafc; border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 12px; border-left: 4px solid var(--color-brand); }
-        .status-spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: var(--color-brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .status-text { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-        .status-stage { font-size: 12px; color: var(--text-tertiary); text-transform: capitalize; }
-        .error-message { background: #fee2e2; color: #b91c1c; padding: 12px 16px; border-radius: 12px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-        .success-card { background: #dcfce7; border-radius: 14px; padding: 16px; text-align: center; }
-        .success-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
-        .download-btn, .dashboard-btn { padding: 8px 20px; border-radius: 40px; font-weight: 600; border: none; cursor: pointer; }
-        .download-btn { background: var(--color-brand); color: white; }
-        .dashboard-btn { background: white; border: 1px solid #ccc; }
-        @media (max-width: 768px) {
-          .create-card { padding: 20px 16px; gap: 18px; }
-          .qt-header-row { display: none; }
-          .qt-row { grid-template-columns: 1fr 28px; grid-template-rows: auto auto; gap: 8px; }
-          .qt-type-wrap { grid-column: 1; }
-          .qt-remove-btn { grid-column: 2; grid-row: 1; }
-          .qt-stepper:first-of-type { grid-column: 1; grid-row: 2; }
-          .qt-stepper:last-of-type { grid-column: 2 / span 1; grid-row: 2; }
-          .qt-row::before { content: 'No. of Questions'; font-size: 12px; font-weight: 700; color: var(--text-secondary); grid-column: 1; grid-row: 2; }
-        }
-      `}</style>
     </>
   );
 }
