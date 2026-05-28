@@ -128,7 +128,7 @@ sequenceDiagram
 | Database           | MongoDB (Mongoose)                                   |
 | Job Queue          | BullMQ (Redis)                                       |
 | AI                 | Google Gemini (`generative-ai` SDK)                  |
-| PDF Generation     | Handlebars + Playwright (local) / Browserless (prod) |
+| PDF Generation     | Browserless                                          |
 | File Extraction    | pdf-parse-new                                        |
 | Authentication     | bcryptjs + jsonwebtoken                              |
 | Realtime           | Socket.IO + Redis Pub/Sub                            |
