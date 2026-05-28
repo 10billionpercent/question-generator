@@ -7,7 +7,41 @@ import TopBar from "@/components/TopBar";
 import {
   createAssignmentWithFile,
   UploadResponse,
+  AssignmentFormData,
 } from "@/services/assignmentService";
+import { GeneratedPaper } from "@veda/shared";
+
+// Socket event types
+interface GenerationProgressEvent {
+  type: "generation_progress";
+  jobId: string;
+  progress: number;
+  stage?: "extracting" | "generating" | "pdf";
+  message?: string;
+  assignmentId: string;
+}
+
+interface GenerationCompletedEvent {
+  type: "generation_completed";
+  jobId: string;
+  paperId: string;
+  paper?: GeneratedPaper;
+  pdfUrl?: string;
+  assignmentId: string;
+}
+
+interface GenerationFailedEvent {
+  type: "generation_failed";
+  jobId: string;
+  error: string;
+  assignmentId: string;
+}
+
+interface GenerationStartedEvent {
+  type: "generation_started";
+  jobId: string;
+  assignmentId: string;
+}
 
 const QUESTION_TYPE_OPTIONS = [
   "Multiple Choice Questions",
@@ -20,12 +54,11 @@ const QUESTION_TYPE_OPTIONS = [
   "Match the Following",
 ];
 
-// Mapping from UI label to backend enum value (as per shared schema)
 const typeMapping: Record<string, string> = {
   "Multiple Choice Questions": "mcq",
   "Short Questions": "short-answer",
   "Long Questions": "long-answer",
-  "Diagram/Graph-Based Questions": "long-answer", // fallback
+  "Diagram/Graph-Based Questions": "long-answer",
   "Numerical Problems": "long-answer",
   "Fill in the Blanks": "fill-blanks",
   "True/False": "true-false",
@@ -39,7 +72,6 @@ interface QuestionRow {
   marks: number;
 }
 
-// Real-time status states
 type GenerationStatus =
   | "idle"
   | "uploading"
@@ -53,7 +85,6 @@ export default function CreateAssignmentPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [dueDate, setDueDate] = useState("");
@@ -70,12 +101,10 @@ export default function CreateAssignmentPage() {
     { id: "4", type: "Numerical Problems", numQuestions: 5, marks: 5 },
   ]);
 
-  // Submission & real-time state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [progressMessage, setProgressMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [generatedPaperId, setGeneratedPaperId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
@@ -85,7 +114,6 @@ export default function CreateAssignmentPage() {
     0,
   );
 
-  // Cleanup socket on unmount
   useEffect(() => {
     return () => {
       if (socketRef.current) {
@@ -100,12 +128,7 @@ export default function CreateAssignmentPage() {
     if (!available) return;
     setQuestionRows((prev) => [
       ...prev,
-      {
-        id: Date.now().toString(),
-        type: available,
-        numQuestions: 1,
-        marks: 1,
-      },
+      { id: Date.now().toString(), type: available, numQuestions: 1, marks: 1 },
     ]);
   }
 
@@ -139,7 +162,7 @@ export default function CreateAssignmentPage() {
 
   function handleFile(file: File) {
     setUploadedFile(file);
-    setErrorMsg(""); // clear any previous error
+    setErrorMsg("");
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -149,42 +172,26 @@ export default function CreateAssignmentPage() {
     if (file) handleFile(file);
   }
 
-  // Build backend-friendly payload from UI state
-  function buildFormData(): { formData: any; file: File } {
+  function buildFormData(): { formData: AssignmentFormData; file: File } {
     if (!uploadedFile) {
       throw new Error("Please upload a file");
     }
 
-    // Map question rows to the backend's expected questionTypes array (strings like "mcq")
-    // and also compute total questions & total marks from rows? Backend expects totalQuestions and marksPerQuestion as single numbers.
-    // But your backend schema has totalQuestions and marksPerQuestion as single numbers (per assignment).
-    // The UI splits by type but backend currently expects a global count & marks per question.
-    // Wait – looking at your shared schema: assignmentFormSchema has totalQuestions (number) and marksPerQuestion (number).
-    // It does NOT have per-type breakdown. So we must aggregate.
-    // The backend will then generate a paper with mixed types? Actually the AI prompt will handle distribution.
-    // So we send totalQuestions = sum of all row.numQuestions, and marksPerQuestion = average? Or we can send a more complex field?
-    // But the backend controller uses assignmentFormSchema which has totalQuestions & marksPerQuestion.
-    // So we'll send totalQuestions = sum, and marksPerQuestion = totalMarks / totalQuestions (or just pick the first row's marks? better to compute average)
-    // For simplicity and to match AI expectations, we'll send totalQuestions and marksPerQuestion as per the first non-zero row.
-    // But the user might have different marks per type – the backend doesn't support that yet.
-    // To be safe, we'll send totalQuestions = sum, and marksPerQuestion = totalMarks / totalQuestions (rounded).
     const avgMarksPerQuestion = Math.round(totalMarks / totalQuestions);
-
-    // Collect unique question types as strings for the backend (mapped)
     const questionTypeValues = Array.from(
       new Set(questionRows.map((row) => typeMapping[row.type] || "mcq")),
     );
 
-    const formPayload = {
-      title: "Assessment", // You might want an input field for title – for now static
+    const formPayload: AssignmentFormData = {
+      title: "Assessment",
       questionTypes: questionTypeValues,
       totalQuestions: totalQuestions,
       marksPerQuestion: avgMarksPerQuestion || 1,
       additionalInstructions: additionalInfo || undefined,
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-      difficultyPreference: "medium" as const, // can be made dynamic later
+      difficultyPreference: "medium",
       classLevel: "General",
-      institutionName: "VedaAI", // or from user profile
+      institutionName: "VedaAI",
     };
 
     return { formData: formPayload, file: uploadedFile };
@@ -207,15 +214,13 @@ export default function CreateAssignmentPage() {
 
     try {
       const { formData, file } = buildFormData();
-      // 1. Submit to backend
       const response: UploadResponse = await createAssignmentWithFile(
         formData,
         file,
       );
-      const { assignmentId, jobId } = response;
-      console.log("Assignment created:", assignmentId, "Job:", jobId);
+      const { assignmentId } = response;
+      console.log("Assignment created:", assignmentId);
 
-      // 2. Connect Socket.IO and subscribe
       const socketUrl =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
       const socket = io(socketUrl);
@@ -226,8 +231,7 @@ export default function CreateAssignmentPage() {
         socket.emit("subscribe_to_assignment", assignmentId);
       });
 
-      // Listen for progress updates
-      socket.on("generation_progress", (data: any) => {
+      socket.on("generation_progress", (data: GenerationProgressEvent) => {
         console.log("Progress:", data);
         setProgressMessage(data.message || "Processing...");
         if (data.stage === "extracting") setStatus("extracting");
@@ -235,39 +239,33 @@ export default function CreateAssignmentPage() {
         else if (data.stage === "pdf") setStatus("pdf");
       });
 
-      socket.on("generation_completed", (data: any) => {
+      socket.on("generation_completed", (data: GenerationCompletedEvent) => {
         console.log(
           "🔔 generation_completed FULL DATA:",
           JSON.stringify(data, null, 2),
         );
-
-        // ✅ Use assignmentId – the backend accepts it and returns the paper
         const idToUse = data.assignmentId;
         console.log("Redirecting with ASSIGNMENT ID:", idToUse);
-
         setStatus("completed");
         setProgressMessage("Assignment generated successfully!");
-        setGeneratedPaperId(idToUse);
-        setPdfUrl(data.paper?.pdfUrl || data.pdfUrl);
+        setPdfUrl(data.paper?.pdfUrl || data.pdfUrl || null);
         setIsSubmitting(false);
-
         router.push(`/assignments/created?paperId=${idToUse}`);
       });
 
-      socket.on("generation_failed", (data: any) => {
+      socket.on("generation_failed", (data: GenerationFailedEvent) => {
         console.error("Generation failed:", data.error);
         setStatus("failed");
         setErrorMsg(data.error || "Generation failed. Please try again.");
         setIsSubmitting(false);
       });
 
-      // Optional: listen for job completion if needed
-      socket.on("generation_started", (data: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      socket.on("generation_started", (_: GenerationStartedEvent) => {
         setStatus("extracting");
         setProgressMessage("Extracting text from file...");
       });
 
-      // Set a timeout to handle cases where socket never responds
       const timeout = setTimeout(() => {
         if (status !== "completed" && isSubmitting) {
           setErrorMsg(
@@ -276,21 +274,23 @@ export default function CreateAssignmentPage() {
           setIsSubmitting(false);
           setStatus("failed");
         }
-      }, 120000); // 2 minutes
+      }, 120000);
 
-      // Cleanup timeout on success/failure
       const cleanup = () => clearTimeout(timeout);
       socket.once("generation_completed", cleanup);
       socket.once("generation_failed", cleanup);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err.message || "Failed to create assignment. Check console.");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to create assignment. Check console.";
+      setErrorMsg(message);
       setIsSubmitting(false);
       setStatus("failed");
     }
   }
 
-  // After completion, user can download or go to dashboard
   function handleDownload() {
     if (pdfUrl) {
       window.open(pdfUrl, "_blank");
@@ -304,7 +304,6 @@ export default function CreateAssignmentPage() {
   return (
     <>
       <TopBar title="Assignment" />
-
       <div className="create-page">
         <div className="create-header">
           <div className="create-header-title-row">
@@ -612,7 +611,6 @@ export default function CreateAssignmentPage() {
           )}
         </div>
 
-        {/* Navigation - hide when completed to avoid double action */}
         {status !== "completed" && (
           <div className="create-nav">
             <button

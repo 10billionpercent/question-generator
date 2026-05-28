@@ -33,6 +33,22 @@ interface GeneratedPaper {
   pdfUrl?: string;
 }
 
+// Socket event types
+interface GenerationCompletedEvent {
+  type: "generation_completed";
+  jobId: string;
+  paperId: string;
+  assignmentId: string;
+  pdfUrl?: string;
+}
+
+interface GenerationFailedEvent {
+  type: "generation_failed";
+  jobId: string;
+  error: string;
+  assignmentId: string;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 const renderDifficultyStars = (difficulty: string) => {
@@ -87,8 +103,10 @@ export default function CreatedAssignmentPage() {
         const data = await res.json();
         setPaper(data);
         setLoading(false);
-      } catch (err: any) {
-        setError(err.message || "Failed to load paper");
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load paper";
+        setError(message);
         setLoading(false);
       }
     };
@@ -110,31 +128,32 @@ export default function CreatedAssignmentPage() {
       socket.emit("subscribe_to_assignment", paperId);
     });
 
-    socket.on("generation_completed", async (data: any) => {
-      // When PDF generation completes, refetch paper to get pdfUrl
-      console.log("Received generation_completed in created page:", data);
-      if (data.assignmentId === paperId) {
-        try {
-          const res = await fetch(`${API_BASE}/api/papers/${paperId}`);
-          if (res.ok) {
-            const updatedPaper = await res.json();
-            setPaper(updatedPaper);
-            setPdfGenerating(false);
-            // If pdfUrl is now available, automatically download it
-            if (updatedPaper.pdfUrl) {
-              const url = updatedPaper.pdfUrl.startsWith("http")
-                ? updatedPaper.pdfUrl
-                : `${API_BASE}${updatedPaper.pdfUrl}`;
-              window.open(url, "_blank");
+    socket.on(
+      "generation_completed",
+      async (data: GenerationCompletedEvent) => {
+        console.log("Received generation_completed in created page:", data);
+        if (data.assignmentId === paperId) {
+          try {
+            const res = await fetch(`${API_BASE}/api/papers/${paperId}`);
+            if (res.ok) {
+              const updatedPaper = await res.json();
+              setPaper(updatedPaper);
+              setPdfGenerating(false);
+              if (updatedPaper.pdfUrl) {
+                const url = updatedPaper.pdfUrl.startsWith("http")
+                  ? updatedPaper.pdfUrl
+                  : `${API_BASE}${updatedPaper.pdfUrl}`;
+                window.open(url, "_blank");
+              }
             }
+          } catch (err) {
+            console.error("Failed to refetch paper after PDF generation", err);
           }
-        } catch (err) {
-          console.error("Failed to refetch paper after PDF generation", err);
         }
-      }
-    });
+      },
+    );
 
-    socket.on("generation_failed", (data: any) => {
+    socket.on("generation_failed", (data: GenerationFailedEvent) => {
       if (data.assignmentId === paperId) {
         console.error("PDF generation failed", data.error);
         setPdfGenerating(false);
@@ -150,7 +169,6 @@ export default function CreatedAssignmentPage() {
   const handleDownload = async () => {
     if (!paperId) return;
 
-    // If PDF already exists, open it
     if (paper?.pdfUrl) {
       const url = paper.pdfUrl.startsWith("http")
         ? paper.pdfUrl
@@ -159,7 +177,6 @@ export default function CreatedAssignmentPage() {
       return;
     }
 
-    // Otherwise trigger PDF generation
     if (pdfGenerating) {
       alert("PDF is already being generated. Please wait...");
       return;
@@ -169,10 +186,11 @@ export default function CreatedAssignmentPage() {
     try {
       await generatePDF(paperId);
       console.log("PDF generation job started");
-      // The socket will handle the completion and download
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || "Failed to start PDF generation");
+      const message =
+        err instanceof Error ? err.message : "Failed to start PDF generation";
+      alert(message);
       setPdfGenerating(false);
     }
   };
