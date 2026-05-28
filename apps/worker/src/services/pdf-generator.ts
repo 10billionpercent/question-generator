@@ -8,8 +8,12 @@ Handlebars.registerHelper("inc", (value: number) => value + 1);
 
 export async function generatePdf(paper: any): Promise<Buffer> {
   const templatePath = path.resolve(
-    process.cwd(),
-    "apps/worker/src/templates/paper-template.html",
+    __dirname,
+    "..",
+    "..",
+    "src",
+    "templates",
+    "paper-template.html",
   );
   const templateSource = await fs.readFile(templatePath, "utf-8");
   const template = Handlebars.compile(templateSource);
