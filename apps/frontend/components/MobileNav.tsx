@@ -80,13 +80,14 @@ export default function MobileNav() {
         .mobile-nav {
           display: none;
           position: fixed;
-          margin-top: 10px;
+          margin: 10px;
+          border-radius: 16px;
           bottom: 0;
           left: 0;
           right: 0;
-          background: #111111;
-          border-top: 1px solid #2a2a2a;
-          padding: 8px 0 20px;
+          border: 1px solid var(--color-brand);
+          background-color: var(--main-bg);
+          padding: 10px;
           z-index: 100;
           flex-direction: row;
           justify-content: space-around;
@@ -99,17 +100,18 @@ export default function MobileNav() {
           align-items: center;
           gap: 4px;
           flex: 1;
-          padding: 6px 0;
+          padding: 6px;
           background: none;
           border: none;
           cursor: pointer;
-          color: #888;
           transition: color 0.15s;
           font-family: var(--font);
         }
 
         .mn-tab.active {
           color: white;
+          background: var(--color-brand);
+          border-radius: 8px;
         }
 
         .mn-icon {
@@ -119,8 +121,9 @@ export default function MobileNav() {
         }
 
         .mn-label {
-          font-size: 10px;
+          font-size: 12px;
           font-weight: 500;
+          overflow-wrap: break-word;
         }
 
         @media (max-width: 768px) {
