@@ -7,6 +7,7 @@ import { Sparkles } from "lucide-react";
 import { getMe, getToken, removeToken } from "@/services/authService";
 import type { Assignment as AuthAssignment } from "@/services/authService";
 import styles from "./assignments.module.css";
+import { useAssignmentStore } from "@/stores/assignmentStore";
 
 type Assignment = {
   id: string;
@@ -100,6 +101,7 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { setCount } = useAssignmentStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -108,6 +110,7 @@ export default function AssignmentsPage() {
         if (!token) {
           setIsLoggedIn(false);
           setAssignments([]);
+          setCount(0);
           setLoading(false);
           return;
         }
@@ -125,6 +128,7 @@ export default function AssignmentsPage() {
 
         setIsLoggedIn(true);
         setAssignments(mapped);
+        setCount(apiAssignments.length); // 👈 update store
       } catch (err: unknown) {
         console.error("Failed to fetch assignments", err);
         const error = err instanceof Error ? err : new Error(String(err));
@@ -141,7 +145,7 @@ export default function AssignmentsPage() {
     };
 
     fetchData();
-  }, []);
+  }, [setCount]);
 
   const hasAssignments = assignments.length > 0;
   const filtered = assignments.filter((a) =>

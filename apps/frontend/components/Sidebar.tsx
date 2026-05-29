@@ -12,11 +12,12 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUserStore } from "@/stores/userStore";
+import { useAssignmentStore } from "@/stores/assignmentStore";
 
 const navItems = [
   { label: "Home", href: "/", icon: LayoutGrid },
   { label: "My Groups", href: "/assignments", icon: Users },
-  { label: "Assignments", href: "/assignments", icon: FileText, badge: 10 },
+  { label: "Assignments", href: "/assignments", icon: FileText, badge: true },
   { label: "AI Teacher's Toolkit", href: "/assignments", icon: Box },
   { label: "My Library", href: "/assignments", icon: Library },
 ];
@@ -24,14 +25,14 @@ const navItems = [
 export default function Sidebar() {
   const router = useRouter();
   const { user, fetchUser } = useUserStore();
+  const { count: assignmentCount, fetchCount } = useAssignmentStore();
   const [activeLabel, setActiveLabel] = useState<string>("Home");
 
-  // Ensure user data is loaded on mount
   useEffect(() => {
     fetchUser();
-  }, [fetchUser]);
+    fetchCount();
+  }, [fetchUser, fetchCount]);
 
-  // Load saved active nav item from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("activeNav");
     if (saved && navItems.some((item) => item.label === saved)) {
@@ -47,7 +48,6 @@ export default function Sidebar() {
     router.push(href);
   };
 
-  // School info – use real data if logged in, else placeholder
   const schoolName = user?.institutionName || "Training Corps Academy";
   const schoolLocation = user?.location || "Shiganshina";
 
@@ -69,18 +69,19 @@ export default function Sidebar() {
         <nav className="sidebar-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const isActive = activeLabel === item.label;
             return (
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item.label, item.href)}
-                className={`nav-item ${activeLabel === item.label ? "active" : ""}`}
+                className={`nav-item ${isActive ? "active" : ""}`}
               >
                 <span className="nav-icon">
                   <Icon size={20} />
                 </span>
                 <span className="nav-label">{item.label}</span>
-                {item.badge !== undefined && (
-                  <span className="nav-badge">{item.badge}</span>
+                {item.badge && (
+                  <span className="nav-badge">{assignmentCount}</span>
                 )}
               </button>
             );
@@ -89,7 +90,6 @@ export default function Sidebar() {
 
         <div style={{ flex: 1 }} />
 
-        {/* School profile – dynamic from user store */}
         <div className="school-profile">
           <div className="school-avatar">
             <img
@@ -113,7 +113,7 @@ export default function Sidebar() {
       </aside>
 
       <style>{`
-        /* Your existing styles – unchanged */
+        /* Your existing CSS stays exactly the same */
         .sidebar {
           width: var(--sidebar-width);
           min-height: 100vh;
@@ -175,7 +175,6 @@ export default function Sidebar() {
           text-decoration: none;
         }
         .create-btn:hover {
-          background: #222;
           transform: scale(0.99);
         }
         .sidebar-nav {
