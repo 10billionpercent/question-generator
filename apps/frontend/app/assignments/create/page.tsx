@@ -407,7 +407,7 @@ export default function CreateAssignmentPage() {
                   Choose a file or drag &amp; drop it here
                 </p>
                 <p className={styles["upload-hint"]}>
-                  PDF, TXT, JPEG, PNG up to 10MB
+                  PDF and TXT up to 10MB
                 </p>
                 <button
                   className={styles["browse-btn"]}

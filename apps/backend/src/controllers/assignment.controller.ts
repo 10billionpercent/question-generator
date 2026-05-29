@@ -4,6 +4,7 @@ import { generationJobPayloadSchema } from "@veda/shared";
 import { AssignmentModel } from "../models/assignment.model";
 import { addGenerationJob } from "../queues/generation.queue";
 import { getIO } from "../socket";
+import { GeneratedPaperModel } from "../models/generated-paper.model";
 
 export const regenerateAssignment = async (req: Request, res: Response) => {
   try {
@@ -11,6 +12,10 @@ export const regenerateAssignment = async (req: Request, res: Response) => {
     const assignment = await AssignmentModel.findById(assignmentId);
     if (!assignment)
       return res.status(404).json({ error: "Assignment not found" });
+
+    if (assignment.paperId) {
+      await GeneratedPaperModel.findByIdAndDelete(assignment.paperId);
+    }
 
     // Use stored breakdown or fallback to empty
     const questionBreakdown = (assignment as any).questionBreakdown || [];

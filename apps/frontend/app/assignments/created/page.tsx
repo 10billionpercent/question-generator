@@ -9,7 +9,6 @@ import { Star } from "lucide-react";
 import { generatePDF } from "@/services/assignmentService";
 import styles from "./createdAssignment.module.css";
 
-// Interfaces unchanged
 interface QuestionOption {
   label: string;
   text: string;
@@ -54,6 +53,21 @@ interface GenerationFailedEvent {
   type: "generation_failed";
   jobId: string;
   error: string;
+  assignmentId: string;
+}
+
+interface GenerationStartedEvent {
+  type: "generation_started";
+  jobId: string;
+  assignmentId: string;
+}
+
+interface GenerationProgressEvent {
+  type: "generation_progress";
+  jobId: string;
+  progress: number;
+  stage?: "extracting" | "generating" | "pdf";
+  message?: string;
   assignmentId: string;
 }
 
@@ -110,11 +124,13 @@ function CreatedAssignmentContent() {
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        console.log("📄 Paper fetched:", data.subject, data.maxMarks);
         setPaper(data);
         setLoading(false);
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : "Failed to load paper";
+        console.error("❌ Fetch error:", err);
         setError(message);
         setLoading(false);
       }
@@ -123,7 +139,7 @@ function CreatedAssignmentContent() {
     fetchPaper();
   }, [paperId]);
 
-  // Socket for PDF generation updates
+  // Socket for generation updates (PDF & regeneration)
   useEffect(() => {
     if (!paperId || loading) return;
 
@@ -133,44 +149,41 @@ function CreatedAssignmentContent() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("Socket connected in created page, subscribing to", paperId);
+      console.log("🔌 Socket connected, subscribing to", paperId);
       socket.emit("subscribe_to_assignment", paperId);
     });
 
+    socket.on("generation_started", (data: GenerationStartedEvent) => {
+      console.log("🚀 generation_started:", data);
+    });
+
+    socket.on("generation_progress", (data: GenerationProgressEvent) => {
+      console.log("📊 generation_progress:", data);
+    });
     socket.on(
       "generation_completed",
       async (data: GenerationCompletedEvent) => {
-        console.log("Received generation_completed in created page:", data);
+        console.log("🎉 generation_completed received:", data);
         if (data.assignmentId === paperId) {
-          try {
-            const res = await fetch(`${API_BASE}/api/papers/${paperId}`);
-            if (res.ok) {
-              const updatedPaper = await res.json();
-              setPaper(updatedPaper);
-              setPdfGenerating(false);
-              if (updatedPaper.pdfUrl) {
-                const url = updatedPaper.pdfUrl.startsWith("http")
-                  ? updatedPaper.pdfUrl
-                  : `${API_BASE}${updatedPaper.pdfUrl}`;
-                window.open(url, "_blank");
-              }
-            }
-          } catch (err) {
-            console.error("Failed to refetch paper after PDF generation", err);
-          }
+          console.log(
+            "✅ Completion belongs to this assignment. Reloading page to show new content...",
+          );
+          window.location.reload();
         }
       },
     );
 
     socket.on("generation_failed", (data: GenerationFailedEvent) => {
       if (data.assignmentId === paperId) {
-        console.error("PDF generation failed", data.error);
+        console.error("❌ Generation failed:", data.error);
         setPdfGenerating(false);
-        alert("PDF generation failed. Please try again.");
+        setRegenerating(false);
+        alert("Generation failed. Please try again.");
       }
     });
 
     return () => {
+      console.log("🔌 Disconnecting socket");
       socket.disconnect();
     };
   }, [paperId, loading]);
@@ -206,6 +219,7 @@ function CreatedAssignmentContent() {
 
   const handleRegenerate = async () => {
     if (!paperId) return;
+    console.log("🔄 Regenerate started for paperId:", paperId);
     setRegenerating(true);
     try {
       const token = localStorage.getItem("token");
@@ -213,26 +227,26 @@ function CreatedAssignmentContent() {
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
-      const res = await fetch(
-        `${API_BASE}/api/assignments/${paperId}/regenerate`,
-        {
-          method: "POST",
-          headers,
-        },
-      );
+      const url = `${API_BASE}/api/assignments/${paperId}/regenerate`;
+      console.log("📤 Sending regenerate request to:", url);
+      const res = await fetch(url, { method: "POST", headers });
+      console.log("📥 Regenerate response status:", res.status);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
+        console.error("❌ Regenerate failed:", errorData);
         throw new Error(errorData.error || "Regeneration failed");
       }
-      console.log("Regeneration started");
-      alert("Regeneration started. The new version will appear shortly.");
-      setTimeout(() => window.location.reload(), 2000);
+      const responseData = await res.json();
+      console.log("✅ Regenerate success:", responseData);
+      console.log("🆕 New jobId:", responseData.jobId);
+      alert(
+        "Regeneration started. The page will reload automatically when ready.",
+      );
     } catch (err) {
-      console.error(err);
+      console.error("🔥 Regeneration error:", err);
       const message =
         err instanceof Error ? err.message : "Failed to start regeneration";
       alert(message);
-    } finally {
       setRegenerating(false);
     }
   };
@@ -384,9 +398,12 @@ function CreatedAssignmentContent() {
           <div className={styles.paperAnswerKey}>
             <h3 className={styles.paperAkTitle}>Answer Key:</h3>
             <ol className={styles.paperAnswers}>
-              {paper.sections.flatMap((section) =>
-                section.questions.map((q, idx) => (
-                  <li key={idx} className={styles.paperAnswer}>
+              {paper.sections.flatMap((section, sectionIdx) =>
+                section.questions.map((q, qIdx) => (
+                  <li
+                    key={`${sectionIdx}-${qIdx}`}
+                    className={styles.paperAnswer}
+                  >
                     {q.answerHint || "No hint provided"}
                   </li>
                 )),
