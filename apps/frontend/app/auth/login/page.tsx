@@ -21,7 +21,6 @@ export default function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // In login page, handleSubmit becomes:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
