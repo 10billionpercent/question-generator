@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { removeToken } from "@/services/authService";
+import { useUserStore } from "@/stores/userStore";
 
 interface TopBarProps {
   title: string;
@@ -11,8 +12,14 @@ interface TopBarProps {
 
 export default function TopBar({ title, showBack = true }: TopBarProps) {
   const router = useRouter();
+  const { user, fetchUser } = useUserStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Ensure user data is loaded on mount (especially after refresh)
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,11 +46,13 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
     router.push("/settings");
   };
 
+  const userName = user?.name || "Guest User";
+  const userAvatar = user?.avatarUrl || "/avatar.png";
+
   return (
     <>
       <div className="topbar">
         <div className="topbar-left">
-          {/* Desktop left side */}
           {showBack && (
             <button
               className="topbar-back desktop-only"
@@ -57,8 +66,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 19 5 12 12 5" />
@@ -74,8 +81,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
             >
               <rect x="3" y="3" width="7" height="7" rx="1" />
               <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -105,8 +110,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -115,23 +118,15 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
             </div>
           </button>
 
-          {/* User button with avatar, username (hidden on mobile), chevron, and dropdown */}
           <div className="topbar-user-wrapper" ref={dropdownRef}>
             <button
               className="topbar-user"
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
               <div className="topbar-avatar">
-                <img
-                  src="/avatar.png"
-                  alt="Hange Zoë"
-                  onError={(e) => {
-                    const t = e.target as HTMLImageElement;
-                    t.style.display = "none";
-                  }}
-                />
+                <img src={userAvatar} alt={userName} />
               </div>
-              <span className="topbar-username">Hange Zoë</span>
+              <span className="topbar-username">{userName}</span>
               <svg
                 width="16"
                 height="16"
@@ -139,8 +134,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
                 className={`chevron ${dropdownOpen ? "rotated" : ""}`}
               >
                 <polyline points="6 9 12 15 18 9" />
@@ -160,8 +153,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                     className="dropdown-icon"
                   >
                     <circle cx="12" cy="12" r="3" />
@@ -180,8 +171,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                     className="dropdown-icon"
                   >
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -197,231 +186,40 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
       </div>
 
       <style>{`
-        .topbar {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 14px 32px;
-          background: var(--main-bg);
-          border-bottom: 1px solid #e8e8e8;
-          position: sticky;
-          top: 0;
-          z-index: 40;
-        }
-
-        .topbar-left {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .topbar-back {
-          width: 32px;
-          height: 32px;
-          background: transparent;
-          border: none;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--text-secondary);
-          transition: background 0.12s;
-        }
-
-        .topbar-back:hover {
-          background: #e8e8e8;
-        }
-
-        .topbar-grid-icon {
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-secondary);
-        }
-
-        .topbar-title {
-          font-size: 16px;
-          font-weight: 500;
-          color: var(--text-secondary);
-        }
-
-        /* Mobile logo – hidden on desktop */
-        .mobile-logo {
-          display: none;
-          align-items: center;
-          gap: 8px;
-        }
-        .mobile-logo-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-        .mobile-logo-icon img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        .mobile-logo-text {
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--text-primary);
-          letter-spacing: -0.3px;
-        }
-
-        /* Desktop-only elements */
-        .desktop-only {
-          display: flex;
-        }
-
-        .topbar-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .topbar-icon-btn {
-          width: 36px;
-          height: 36px;
-          background: transparent;
-          border: none;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--text-primary);
-        }
-
-        .topbar-dot {
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 8px;
-          height: 8px;
-          background: var(--color-brand);
-          border-radius: 50%;
-          border: 1.5px solid var(--main-bg);
-        }
-
-        .topbar-user-wrapper {
-          position: relative;
-        }
-
-        .topbar-user {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          color: var(--text-primary);
-          font-size: 15px;
-          font-weight: 600;
-          font-family: var(--font);
-          padding: 6px 10px;
-          border-radius: 10px;
-          transition: background 0.12s;
-        }
-
-        .topbar-user:hover {
-          background: #e8e8e8;
-        }
-
-        .topbar-avatar {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: #ddd;
-          overflow: hidden;
-        }
-
-        .topbar-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .topbar-username {
-          font-size: 15px;
-          font-weight: 600;
-        }
-
-        .chevron {
-          transition: transform 0.2s ease;
-        }
-
-        .chevron.rotated {
-          transform: rotate(180deg);
-        }
-
-        /* Dropdown menu */
-        .topbar-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          background: white;
-          border: 1px solid #e5e5e5;
-          border-radius: 12px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-          min-width: 180px;
-          z-index: 50;
-          overflow: hidden;
-        }
-
-        .topbar-dropdown-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          text-align: left;
-          padding: 12px 16px;
-          background: transparent;
-          border: none;
-          font-size: 14px;
-          font-weight: 500;
-          font-family: var(--font);
-          color: var(--text-primary);
-          cursor: pointer;
-          transition: background 0.1s;
-        }
-
-        .topbar-dropdown-item:hover {
-          background: #f5f5f5;
-        }
-
-        .dropdown-icon {
-          flex-shrink: 0;
-          color: currentColor;
-        }
-
-        .topbar-dropdown-danger {
-          color: #e53e3e;
-        }
-
-        /* Responsive: on mobile, hide desktop left elements, show mobile logo */
+        /* Your existing styles – unchanged */
+        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; background: var(--main-bg); border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; z-index: 40; }
+        .topbar-left { display: flex; align-items: center; gap: 10px; }
+        .topbar-back { width: 32px; height: 32px; background: transparent; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: background 0.12s; }
+        .topbar-back:hover { background: #e8e8e8; }
+        .topbar-grid-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+        .topbar-title { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
+        .mobile-logo { display: none; align-items: center; gap: 8px; }
+        .mobile-logo-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .mobile-logo-icon img { width: 100%; height: 100%; object-fit: contain; }
+        .mobile-logo-text { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
+        .desktop-only { display: flex; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+        .topbar-icon-btn { width: 36px; height: 36px; background: transparent; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); }
+        .topbar-dot { position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--color-brand); border-radius: 50%; border: 1.5px solid var(--main-bg); }
+        .topbar-user-wrapper { position: relative; }
+        .topbar-user { display: flex; align-items: center; gap: 8px; background: transparent; border: none; cursor: pointer; color: var(--text-primary); font-size: 15px; font-weight: 600; font-family: var(--font); padding: 6px 10px; border-radius: 10px; transition: background 0.12s; }
+        .topbar-user:hover { background: #e8e8e8; }
+        .topbar-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ddd; overflow: hidden; }
+        .topbar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .topbar-username { font-size: 15px; font-weight: 600; }
+        .chevron { transition: transform 0.2s ease; }
+        .chevron.rotated { transform: rotate(180deg); }
+        .topbar-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border: 1px solid #e5e5e5; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); min-width: 180px; z-index: 50; overflow: hidden; }
+        .topbar-dropdown-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 16px; background: transparent; border: none; font-size: 14px; font-weight: 500; font-family: var(--font); color: var(--text-primary); cursor: pointer; transition: background 0.1s; }
+        .topbar-dropdown-item:hover { background: #f5f5f5; }
+        .dropdown-icon { flex-shrink: 0; color: currentColor; }
+        .topbar-dropdown-danger { color: #e53e3e; }
         @media (max-width: 768px) {
-          .topbar {
-            padding: 12px 16px;
-          }
-          .desktop-only {
-            display: none;
-          }
-          .mobile-logo {
-            display: flex;
-          }
-          .topbar-username {
-            display: none;
-          }
-          .topbar-user {
-            padding: 4px;
-          }
+          .topbar { padding: 12px 16px; }
+          .desktop-only { display: none; }
+          .mobile-logo { display: flex; }
+          .topbar-username { display: none; }
+          .topbar-user { padding: 4px; }
         }
       `}</style>
     </>

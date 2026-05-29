@@ -3,13 +3,13 @@
   "packageManager": "pnpm@10.11.1",
   "private": true,
   "engines": {
-    "node": "20.x",
+    "node": "22.x",
     "pnpm": "10.x"
   },
   "scripts": {
     "dev:backend": "pnpm --filter @veda/backend dev",
     "dev:worker": "pnpm --filter @veda/worker dev",
-    "dev:all": "pnpm --parallel --filter @veda/backend --filter @veda/worker run dev --filter @veda/frontend run dev",
+    "dev:all": "pnpm --parallel --filter @veda/backend --filter @veda/worker run dev",
     "build": "pnpm --filter @veda/shared build && pnpm --filter @veda/backend build && pnpm --filter @veda/worker build",
     "start:backend": "pnpm --filter @veda/backend start",
     "start:worker": "pnpm --filter @veda/worker start",

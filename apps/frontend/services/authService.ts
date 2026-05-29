@@ -1,5 +1,6 @@
-// services/authServices.ts
+// services/authService.ts
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { useUserStore } from "@/stores/userStore";
 
 export interface Assignment {
   _id: string;
@@ -9,7 +10,6 @@ export interface Assignment {
   status: string;
   createdAt: string;
   updatedAt: string;
-  // add other fields as needed
 }
 
 export interface SignupData {
@@ -29,6 +29,8 @@ export interface User {
   name: string;
   emailOrPhone: string;
   institutionName: string;
+  location?: string;
+  avatarUrl?: string;
 }
 
 export interface AuthResponse {
@@ -52,7 +54,10 @@ export async function signup(data: SignupData): Promise<AuthResponse> {
     const error = await res.json();
     throw new Error(error.message || "Signup failed");
   }
-  return res.json();
+  const response: AuthResponse = await res.json();
+  storeToken(response.token);
+  useUserStore.getState().setUser(response.user);
+  return response;
 }
 
 // Login
@@ -66,7 +71,10 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     const error = await res.json();
     throw new Error(error.message || "Login failed");
   }
-  return res.json();
+  const response: AuthResponse = await res.json();
+  storeToken(response.token);
+  useUserStore.getState().setUser(response.user);
+  return response;
 }
 
 // Get current user (with token)
@@ -77,7 +85,9 @@ export async function getMe(token: string): Promise<MeResponse> {
   if (!res.ok) {
     throw new Error("Failed to fetch user");
   }
-  return res.json();
+  const data: MeResponse = await res.json();
+  useUserStore.getState().setUser(data.user);
+  return data;
 }
 
 // Store token in localStorage
@@ -91,4 +101,5 @@ export function getToken(): string | null {
 
 export function removeToken() {
   localStorage.removeItem("token");
+  useUserStore.getState().clearUser();
 }

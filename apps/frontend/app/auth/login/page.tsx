@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, signup, storeToken } from "@/services/authService";
+import { login, signup } from "@/services/authService";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -21,27 +21,25 @@ export default function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // In login page, handleSubmit becomes:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      let response;
       if (mode === "login") {
-        response = await login({
+        await login({
           emailOrPhone: formData.emailOrPhone,
           password: formData.password,
         });
       } else {
-        response = await signup({
+        await signup({
           name: formData.name,
           emailOrPhone: formData.emailOrPhone,
           institutionName: formData.institutionName,
           password: formData.password,
         });
       }
-      storeToken(response.token);
       router.push("/assignments");
     } catch (err: unknown) {
       const errorMessage =

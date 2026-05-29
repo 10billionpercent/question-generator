@@ -11,47 +11,32 @@ import {
   Library,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useUserStore } from "@/stores/userStore";
 
 const navItems = [
-  {
-    label: "Home",
-    href: "/",
-    icon: LayoutGrid,
-  },
-  {
-    label: "My Groups",
-    href: "/assignments",
-    icon: Users,
-  },
-  {
-    label: "Assignments",
-    href: "/assignments",
-    icon: FileText,
-    badge: 10,
-  },
-  {
-    label: "AI Teacher's Toolkit",
-    href: "/assignments",
-    icon: Box,
-  },
-  {
-    label: "My Library",
-    href: "/assignments",
-    icon: Library,
-  },
+  { label: "Home", href: "/", icon: LayoutGrid },
+  { label: "My Groups", href: "/assignments", icon: Users },
+  { label: "Assignments", href: "/assignments", icon: FileText, badge: 10 },
+  { label: "AI Teacher's Toolkit", href: "/assignments", icon: Box },
+  { label: "My Library", href: "/assignments", icon: Library },
 ];
 
 export default function Sidebar() {
   const router = useRouter();
+  const { user, fetchUser } = useUserStore();
   const [activeLabel, setActiveLabel] = useState<string>("Home");
 
-  // Load saved active nav item from localStorage on mount
+  // Ensure user data is loaded on mount
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  // Load saved active nav item from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("activeNav");
     if (saved && navItems.some((item) => item.label === saved)) {
       setActiveLabel(saved);
     } else {
-      // default to "Home"
       setActiveLabel("Home");
     }
   }, []);
@@ -62,10 +47,13 @@ export default function Sidebar() {
     router.push(href);
   };
 
+  // School info – use real data if logged in, else placeholder
+  const schoolName = user?.institutionName || "Training Corps Academy";
+  const schoolLocation = user?.location || "Shiganshina";
+
   return (
     <>
       <aside className="sidebar">
-        {/* Logo */}
         <div className="sidebar-logo">
           <div className="logo-icon">
             <img src="/logo.png" alt="VedaAI" />
@@ -73,13 +61,11 @@ export default function Sidebar() {
           <span className="logo-text">VedaAI</span>
         </div>
 
-        {/* Create Assignment CTA */}
         <Link href="/assignments/create" className="create-btn">
           <Sparkles size={20} />
           Create Assignment
         </Link>
 
-        {/* Navigation items */}
         <nav className="sidebar-nav">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -101,10 +87,9 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* School profile */}
+        {/* School profile – dynamic from user store */}
         <div className="school-profile">
           <div className="school-avatar">
             <img
@@ -121,13 +106,14 @@ export default function Sidebar() {
             />
           </div>
           <div className="school-info">
-            <span className="school-name">Training Corps Academy</span>
-            <span className="school-sub">Shiganshina</span>
+            <span className="school-name">{schoolName}</span>
+            <span className="school-sub">{schoolLocation}</span>
           </div>
         </div>
       </aside>
 
       <style>{`
+        /* Your existing styles – unchanged */
         .sidebar {
           width: var(--sidebar-width);
           min-height: 100vh;
@@ -142,7 +128,6 @@ export default function Sidebar() {
           height: 100vh;
           overflow-y: auto;
         }
-
         .sidebar-logo {
           display: flex;
           align-items: center;
@@ -150,7 +135,6 @@ export default function Sidebar() {
           margin-bottom: 28px;
           padding: 0 4px;
         }
-
         .logo-icon {
           width: 38px;
           height: 38px;
@@ -161,20 +145,17 @@ export default function Sidebar() {
           flex-shrink: 0;
           overflow: hidden;
         }
-
         .logo-icon img {
           width: 100%;
           height: 100%;
           object-fit: contain;
         }
-
         .logo-text {
           font-size: 22px;
           font-weight: 700;
           color: var(--text-primary);
           letter-spacing: -0.5px;
         }
-
         .create-btn {
           display: flex;
           align-items: center;
@@ -193,18 +174,15 @@ export default function Sidebar() {
           cursor: pointer;
           text-decoration: none;
         }
-
         .create-btn:hover {
           background: #222;
           transform: scale(0.99);
         }
-
         .sidebar-nav {
           display: flex;
           flex-direction: column;
           gap: 2px;
         }
-
         .nav-item {
           display: flex;
           align-items: center;
@@ -223,17 +201,14 @@ export default function Sidebar() {
           width: 100%;
           font-family: inherit;
         }
-
         .nav-item:hover {
           background: #f5f5f5;
           color: var(--text-primary);
         }
-
         .nav-item.active {
           background: #f0f0f0;
           color: var(--text-primary);
         }
-
         .nav-icon {
           width: 24px;
           height: 24px;
@@ -242,12 +217,10 @@ export default function Sidebar() {
           justify-content: center;
           flex-shrink: 0;
         }
-
         .nav-label {
           flex: 1;
           text-align: left;
         }
-
         .nav-badge {
           background: var(--color-brand);
           color: white;
@@ -258,7 +231,6 @@ export default function Sidebar() {
           min-width: 24px;
           text-align: center;
         }
-
         .school-profile {
           display: flex;
           align-items: center;
@@ -268,7 +240,6 @@ export default function Sidebar() {
           padding: 12px 14px;
           margin-top: 4px;
         }
-
         .school-avatar {
           width: 42px;
           height: 42px;
@@ -280,31 +251,26 @@ export default function Sidebar() {
           align-items: center;
           justify-content: center;
         }
-
         .school-avatar img {
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
-
         .school-info {
           display: flex;
           flex-direction: column;
           gap: 2px;
         }
-
         .school-name {
           font-size: 14px;
           font-weight: 700;
           color: var(--text-primary);
           line-height: 1.2;
         }
-
         .school-sub {
           font-size: 12px;
           color: var(--text-secondary);
         }
-
         @media (max-width: 768px) {
           .sidebar {
             display: none;
