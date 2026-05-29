@@ -161,7 +161,7 @@ export default function Sidebar() {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          background: var(--text-primary);
+          background: var(--color-brand);
           color: white;
           border: 2px solid var(--color-brand);
           border-radius: 50px;
