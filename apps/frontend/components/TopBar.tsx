@@ -192,7 +192,6 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
         .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; background: var(--main-bg); border-bottom: 1px solid var(--background-gray); position: sticky; top: 0; z-index: 40; }
         .topbar-left { display: flex; align-items: center; gap: 10px; }
         .topbar-back { width: 32px; height: 32px; background: transparent; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: background 0.12s; }
-        .topbar-back:hover { background: #e8e8e8; }
         .topbar-grid-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
         .topbar-title { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
         .mobile-logo { display: none; align-items: center; gap: 8px; }
