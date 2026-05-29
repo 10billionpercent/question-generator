@@ -4,7 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import { Sparkles } from "lucide-react";
+import { getMe, getToken, removeToken } from "@/services/authService";
+import type { Assignment as AuthAssignment } from "@/services/authService";
 
+// UI Assignment type (id as string, formatted date)
 type Assignment = {
   id: string;
   title: string;
@@ -12,7 +15,6 @@ type Assignment = {
   due?: string;
 };
 
-// Helper to format date
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-GB", {
@@ -90,8 +92,6 @@ function AssignmentCard({ assignment }: { assignment: Assignment }) {
   );
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-
 export default function AssignmentsPage() {
   const [search, setSearch] = useState("");
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -101,7 +101,7 @@ export default function AssignmentsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = getToken();
         if (!token) {
           setIsLoggedIn(false);
           setAssignments([]);
@@ -109,36 +109,31 @@ export default function AssignmentsPage() {
           return;
         }
 
-        const res = await fetch(`${API_BASE}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) {
-          // Token invalid or expired
-          localStorage.removeItem("token");
-          setIsLoggedIn(false);
-          setAssignments([]);
-          setLoading(false);
-          return;
-        }
-
-        const data = await res.json();
-        // Expected structure: { user: {...}, assignments: [...] }
+        const data = await getMe(token);
+        // data.assignments is AuthAssignment[]
         const apiAssignments = data.assignments || [];
 
-        // Map to our Assignment type
-        const mapped: Assignment[] = apiAssignments.map((item: Assignment) => ({
-          id: item.id,
-          title: item.title,
-          assignedOn: formatDate(item.assignedOn),
-          // due: item.due ? formatDate(item.due) : undefined, // API doesn't provide due yet
-        }));
+        // Map to UI Assignment type – note: API uses _id and createdAt
+        const mapped: Assignment[] = apiAssignments.map(
+          (item: AuthAssignment) => ({
+            id: item._id, // ✅ _id from API
+            title: item.title,
+            assignedOn: formatDate(item.createdAt), // ✅ createdAt from API
+          }),
+        );
 
         setIsLoggedIn(true);
         setAssignments(mapped);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch assignments", err);
-        setIsLoggedIn(false);
+        // Only remove token if error is authentication related (401)
+        if (err.message?.includes("401") || err.status === 401) {
+          removeToken();
+          setIsLoggedIn(false);
+        } else {
+          // Network or other error – keep token but treat as not logged in
+          setIsLoggedIn(false);
+        }
         setAssignments([]);
       } finally {
         setLoading(false);
@@ -176,7 +171,6 @@ export default function AssignmentsPage() {
 
       <div className="asgn-page">
         {!hasAssignments ? (
-          // Empty state: same image, conditional text below
           <div className="empty-state">
             <div className="empty-illustration">
               <img
@@ -224,7 +218,6 @@ export default function AssignmentsPage() {
             )}
           </div>
         ) : (
-          // Normal view with assignments
           <>
             <div className="asgn-heading">
               <div className="asgn-heading-left">
@@ -287,7 +280,6 @@ export default function AssignmentsPage() {
         )}
       </div>
 
-      {/* Mobile FAB & bar - only when assignments exist */}
       {hasAssignments && (
         <>
           <Link
@@ -338,7 +330,6 @@ export default function AssignmentsPage() {
           position: relative;
         }
 
-        /* ---- Empty State ---- */
         .empty-state {
           display: flex;
           flex-direction: column;
@@ -397,7 +388,6 @@ export default function AssignmentsPage() {
           background: #222;
         }
 
-        /* ---- Heading ---- */
         .asgn-heading {
           display: flex;
           align-items: center;
@@ -432,7 +422,6 @@ export default function AssignmentsPage() {
           margin-top: 2px;
         }
 
-        /* ---- Toolbar ---- */
         .asgn-toolbar {
           display: flex;
           align-items: center;
@@ -483,14 +472,12 @@ export default function AssignmentsPage() {
           color: var(--text-tertiary);
         }
 
-        /* ---- Grid ---- */
         .asgn-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 16px;
         }
 
-        /* ---- Card ---- */
         .asgn-card {
           background: white;
           border: 1px solid #e8e8e8;
@@ -605,7 +592,6 @@ export default function AssignmentsPage() {
           color: var(--text-primary);
         }
 
-        /* ---- Mobile FAB / create bar ---- */
         .mobile-fab {
           display: none;
           position: fixed;
