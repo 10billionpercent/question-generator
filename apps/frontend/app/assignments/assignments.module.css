@@ -59,10 +59,6 @@
   transition: background 0.15s;
 }
 
-.emptyCta:hover {
-  background: #222;
-}
-
 /* Heading */
 .heading {
   display: flex;
@@ -249,7 +245,7 @@
 }
 
 .dropdownDelete {
-  color: #e53e3e;
+  color: #dc2626;
 }
 
 .cardFooter {
@@ -339,6 +335,67 @@
   padding: 80px 20px;
   font-size: 16px;
   color: var(--text-secondary);
+}
+
+/* Confirmation modal (delete confirmation) */
+.confirm-modal {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 180px;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.confirm-message {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.confirm-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s;
+  border: none;
+}
+
+.confirm-cancel {
+  background: var(--background-light-gray);
+  color: var(--text-primary);
+}
+
+.confirm-cancel:hover {
+  background: var(--border-medium);
+}
+
+.confirm-delete {
+  background: #dc2626;
+  color: white;
+}
+
+.confirm-delete:hover {
+  background: #dc2626;
+}
+
+.confirm-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Responsive */

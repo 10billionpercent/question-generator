@@ -215,8 +215,8 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
         .topbar-dropdown-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 16px; background: transparent; border: none; font-size: 14px; font-weight: 500; font-family: var(--font); color: var(--text-primary); cursor: pointer; transition: background 0.1s; }
         .topbar-dropdown-item:hover { background: #f5f5f5; }
         .dropdown-icon { flex-shrink: 0; color: currentColor; }
-        .topbar-dropdown-danger { color: #e53e3e; }
-        @media (max-width: 768px) {
+        .topbar-dropdown-danger { color: #dc2626; }
+        @media (max-width: 840px) {
           .topbar { padding: 12px 16px; }
           .desktop-only { display: none; }
           .mobile-logo { display: flex; }

@@ -271,7 +271,7 @@ export default function Sidebar() {
           font-size: 12px;
           color: var(--text-tertiary);
         }
-        @media (max-width: 768px) {
+        @media (max-width: 840px) {
           .sidebar {
             display: none;
           }

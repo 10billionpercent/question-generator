@@ -217,7 +217,7 @@
   color: var(--text-secondary);
 }
 .qt-remove-btn:hover {
-  background: #fee2e2;
+  background: transparent;
   color: #dc2626;
 }
 .qt-controls {

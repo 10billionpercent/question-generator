@@ -5,6 +5,7 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import { Sparkles } from "lucide-react";
 import { getMe, getToken, removeToken } from "@/services/authService";
+import { deleteAssignment } from "@/services/assignmentService";
 import type { Assignment as AuthAssignment } from "@/services/authService";
 import styles from "./assignments.module.css";
 import { useAssignmentStore } from "@/stores/assignmentStore";
@@ -25,19 +26,59 @@ function formatDate(dateString: string): string {
   });
 }
 
-function AssignmentCard({ assignment }: { assignment: Assignment }) {
+function AssignmentCard({
+  assignment,
+  onDelete,
+}: {
+  assignment: Assignment;
+  onDelete: (id: string) => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Close menu when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
+        setShowConfirm(false);
       }
     }
-    if (menuOpen) document.addEventListener("mousedown", handleClick);
+    if (menuOpen || showConfirm)
+      document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [menuOpen]);
+  }, [menuOpen, showConfirm]);
+
+  const handleDeleteClick = () => {
+    setMenuOpen(false);
+    setShowConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await deleteAssignment(assignment.id);
+      onDelete(assignment.id);
+      setShowConfirm(false);
+    } catch (err: unknown) {
+      console.error("Delete failed", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to delete assignment. Please try again.";
+      alert(errorMessage);
+      setShowConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowConfirm(false);
+  };
 
   return (
     <div className={styles.card}>
@@ -71,10 +112,34 @@ function AssignmentCard({ assignment }: { assignment: Assignment }) {
               </button>
               <button
                 className={`${styles.dropdownItem} ${styles.dropdownDelete}`}
-                onClick={() => setMenuOpen(false)}
+                onClick={handleDeleteClick}
               >
                 Delete
               </button>
+            </div>
+          )}
+
+          {showConfirm && (
+            <div className={styles["confirm-modal"]}>
+              <div className={styles["confirm-message"]}>
+                Are you sure you want to delete this assignment? This action
+                cannot be undone.
+              </div>
+              <div className={styles["confirm-buttons"]}>
+                <button
+                  className={`${styles["confirm-btn"]} ${styles["confirm-cancel"]}`}
+                  onClick={handleCancel}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`${styles["confirm-btn"]} ${styles["confirm-delete"]}`}
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -101,7 +166,7 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { setCount } = useAssignmentStore();
+  const { setCount, decrement } = useAssignmentStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,7 +193,7 @@ export default function AssignmentsPage() {
 
         setIsLoggedIn(true);
         setAssignments(mapped);
-        setCount(apiAssignments.length); // 👈 update store
+        setCount(apiAssignments.length);
       } catch (err: unknown) {
         console.error("Failed to fetch assignments", err);
         const error = err instanceof Error ? err : new Error(String(err));
@@ -146,6 +211,11 @@ export default function AssignmentsPage() {
 
     fetchData();
   }, [setCount]);
+
+  const handleDeleteAssignment = (id: string) => {
+    setAssignments((prev) => prev.filter((a) => a.id !== id));
+    decrement(); // update store count
+  };
 
   const hasAssignments = assignments.length > 0;
   const filtered = assignments.filter((a) =>
@@ -280,7 +350,11 @@ export default function AssignmentsPage() {
 
             <div className={styles.grid}>
               {filtered.map((a) => (
-                <AssignmentCard key={a.id} assignment={a} />
+                <AssignmentCard
+                  key={a.id}
+                  assignment={a}
+                  onDelete={handleDeleteAssignment}
+                />
               ))}
             </div>
           </>

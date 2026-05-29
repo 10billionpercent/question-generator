@@ -92,3 +92,24 @@ export async function generatePDF(
   }
   return res.json();
 }
+
+// Add this function to assignmentService.ts (after generatePDF)
+export async function deleteAssignment(
+  assignmentId: string,
+): Promise<{ message: string }> {
+  const token = getToken();
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
+  const res = await fetch(`${API_BASE}/api/assignments/${assignmentId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Delete failed" }));
+    throw new Error(error.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}

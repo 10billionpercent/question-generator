@@ -127,7 +127,7 @@ export default function MobileNav() {
           overflow-wrap: break-word;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 840px) {
           .mobile-nav {
             display: flex;
           }
