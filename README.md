@@ -134,6 +134,7 @@ sequenceDiagram
 | Realtime | Socket.IO + Redis Pub/Sub |
 | Storage (prod) | MongoDB (GridFS-style Buffers) |
 | Icons | Lucide (consistent across sidebar + mobile nav) |
+| State Management | Zustand (user store + assignment count store) |
 | Package Manager | pnpm |
 | Monorepo Tooling | pnpm workspaces |
 
@@ -414,6 +415,70 @@ The frontend is based on the provided Figma design, with a few intentional devia
 
 - **Icons** — The Figma used different icon styles in the sidebar vs the mobile nav. I unified both to use Lucide icons throughout, so every navigation item looks and feels identical whether you're on desktop or mobile. Small thing, but it adds up.
 
+- **AI result notification card** — The Figma had this as a plain black/dark card. I changed it to a light background with a brand-color (`#E8470A`) border, matching the same design language used across the rest of the app. Keeps the result card feeling like part of the product rather than a chat bubble dropped in from somewhere else.
+
+### Zustand Stores
+
+The app uses two lightweight Zustand stores for global client state, avoiding prop drilling and redundant API calls.
+
+#### `stores/userStore.ts`
+
+Manages the authenticated user's data globally.
+
+**State:**
+- `user: User | null` — current user object (`id`, `name`, `emailOrPhone`, `institutionName`, `location`, `avatarUrl`)
+- `isLoading: boolean` — true while fetching
+- `error: string | null` — any error message
+
+**Actions:**
+- `setUser(user)` — set directly after login/signup
+- `clearUser()` — reset to null on logout
+- `fetchUser()` — async, hits `/api/auth/me` with stored token and hydrates the store
+
+**Used in:** `TopBar` (user name + avatar), `Sidebar` (institution name), `CreateAssignmentPage` (pre-fill institution name)
+
+---
+
+#### `stores/assignmentStore.ts`
+
+Keeps the assignment count in sync for the sidebar badge.
+
+**State:**
+- `count: number` — total assignments for the logged-in user
+- `isLoading: boolean`
+
+**Actions:**
+- `fetchCount()` — async, fetches from `/api/auth/me` and sets `count` to `assignments.length`
+- `increment()` / `decrement()` — optimistic updates on create/delete
+- `setCount(count)` — manual setter
+
+**Used in:** `Sidebar` (badge on Assignments nav item), `AssignmentsPage` (syncs count after fetch)
+
+---
+
+#### Integration with auth
+
+After a successful login or signup, `authService.ts` calls `useUserStore.getState().setUser(response.user)`. On logout, `removeToken()` triggers `useUserStore.getState().clearUser()`. Components call `fetchUser()` or `fetchCount()` inside `useEffect` to hydrate on mount.
+
+```bash
+pnpm add zustand
+```
+
+```tsx
+import { useUserStore } from "@/stores/userStore";
+import { useAssignmentStore } from "@/stores/assignmentStore";
+
+export default function MyComponent() {
+  const { user, fetchUser } = useUserStore();
+  const { count, fetchCount } = useAssignmentStore();
+
+  useEffect(() => {
+    fetchUser();
+    fetchCount();
+  }, []);
+}
+```
+
 ### `assignmentService.ts` exports
 
 - `createAssignmentWithFile(formData, file)` — posts multipart form data
@@ -461,3 +526,4 @@ The app is deployment-ready on **Render** (free tier). The API server and backgr
 - ✅ **Environment-aware storage** — Local disk in dev, MongoDB in production
 - ✅ **Scalable monorepo** — Clean separation via pnpm workspaces
 - ✅ **Consistent UI** — Lucide icons unified across sidebar and mobile nav, brand-color CTAs and active states that work on both light and dark mode
+- ✅ **Global state** — Zustand stores for user session and assignment count, with optimistic updates and auth-integrated hydration
