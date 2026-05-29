@@ -69,3 +69,33 @@ export const regenerateAssignment = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const deleteAssignment = async (req: Request, res: Response) => {
+  try {
+    const { assignmentId } = req.params;
+    const assignment = await AssignmentModel.findById(assignmentId);
+    if (!assignment)
+      return res.status(404).json({ error: "Assignment not found" });
+
+    // Check ownership
+    const userId = req.authUser?.userId;
+    if (!userId || assignment.userId?.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ error: "Not authorised to delete this assignment" });
+    }
+
+    // Delete associated generated paper (if any)
+    const { GeneratedPaperModel } =
+      await import("../models/generated-paper.model");
+    await GeneratedPaperModel.deleteOne({ assignmentId: assignment._id });
+
+    // Delete the assignment itself
+    await assignment.deleteOne();
+
+    return res.json({ message: "Assignment deleted successfully" });
+  } catch (error) {
+    console.error("Delete assignment error:", error);
+    return res.status(500).json({ error: "Failed to delete assignment" });
+  }
+};
