@@ -122,7 +122,7 @@ sequenceDiagram
 | Layer | Technology |
 |---|---|
 | Frontend Framework | Next.js 14 (App Router) + TypeScript |
-| Styling | CSS Modules + CSS Variables |
+| Styling | CSS Variables (no Tailwind, no CSS Modules) |
 | Runtime | Node.js + TypeScript |
 | API Framework | Express |
 | Database | MongoDB (Mongoose) |
@@ -133,6 +133,7 @@ sequenceDiagram
 | Authentication | bcryptjs + jsonwebtoken |
 | Realtime | Socket.IO + Redis Pub/Sub |
 | Storage (prod) | MongoDB (GridFS-style Buffers) |
+| Icons | Lucide (consistent across sidebar + mobile nav) |
 | Package Manager | pnpm |
 | Monorepo Tooling | pnpm workspaces |
 
@@ -159,7 +160,10 @@ question-generator/
 │       │   ├── layout.tsx
 │       │   └── page.tsx       # Dashboard
 │       ├── components/
-│       │   └── TopBar.tsx
+│       │   ├── Sidebar.tsx    # Desktop nav
+│       │   ├── TopBar.tsx     # Desktop page header
+│       │   ├── MobileHeader.tsx
+│       │   └── MobileNav.tsx  # Bottom tab bar
 │       └── services/
 │           └── assignmentService.ts
 ├── packages/
@@ -250,12 +254,14 @@ Start the API server and worker together:
 ```bash
 pnpm dev:all
 ```
+
 Start the frontend:
 
 ```bash
 cd apps/frontend
 pnpm dev
 ```
+
 Or individually:
 
 ```bash
@@ -396,6 +402,18 @@ curl -J -O http://localhost:4000/api/papers/6a186c9c594164c6efe8bc1a/pdf
 | `/assignments/create` | Form to configure and upload a new assignment |
 | `/assignments/created?paperId=...` | Full paper preview with sections, marks, difficulty, answer key, and PDF download |
 
+### UI Design Decisions
+
+The frontend is based on the provided Figma design, with a few intentional deviations made to improve consistency, usability, and theme resilience:
+
+- **Create Assignment button** — The Figma had this as a black button with an orange border. I changed the background to the brand color (`#E8470A`) directly, because black as a primary CTA blends into dark backgrounds and loses visual hierarchy. The orange always draws the eye regardless of what's behind it, which is exactly what a primary action button should do.
+
+- **Mobile bottom nav** — The Figma used a dark/black bottom navigation bar. I changed this to match the app's light background with a subtle brand-color top border instead. The active tab is highlighted in the brand color. The original dark nav felt disconnected from the rest of the light UI — like two different apps stitched together. This change makes it feel cohesive, and the brand-color highlight still makes the active state obvious on both light and dark displays.
+
+- **Top bar** — The Figma included a hamburger menu icon on the right side of the mobile top bar. I replaced it with a chevron (›) placed next to the user avatar instead, which opens a settings/logout dropdown. The hamburger implied a hidden side drawer that didn't exist in the design, and it was inconsistent with how the desktop sidebar works. The chevron pattern is already familiar from the desktop user menu, so this keeps the interaction model the same across breakpoints.
+
+- **Icons** — The Figma used different icon styles in the sidebar vs the mobile nav. I unified both to use Lucide icons throughout, so every navigation item looks and feels identical whether you're on desktop or mobile. Small thing, but it adds up.
+
 ### `assignmentService.ts` exports
 
 - `createAssignmentWithFile(formData, file)` — posts multipart form data
@@ -442,3 +460,4 @@ The app is deployment-ready on **Render** (free tier). The API server and backgr
 - ✅ **Background workers** — BullMQ handles all heavy tasks async
 - ✅ **Environment-aware storage** — Local disk in dev, MongoDB in production
 - ✅ **Scalable monorepo** — Clean separation via pnpm workspaces
+- ✅ **Consistent UI** — Lucide icons unified across sidebar and mobile nav, brand-color CTAs and active states that work on both light and dark mode
