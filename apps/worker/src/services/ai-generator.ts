@@ -40,14 +40,38 @@ function getPrompt(payload: GenerationJobPayload): string {
   const totalQuestions = rawTotal || 0;
   const marksPerQuestion = rawMarks || 0;
 
-  // Build section instructions from breakdown
+  // Build section instructions with type‑specific hints
   let sectionInstructions = "";
   if (questionBreakdown && questionBreakdown.length > 0) {
     sectionInstructions = `**Question Breakdown:**\n${questionBreakdown
-      .map(
-        (item, idx) =>
-          `- Section ${String.fromCharCode(65 + idx)}: ${item.type} – ${item.count} questions, ${item.marks} marks each`,
-      )
+      .map((item, idx) => {
+        let hint = "";
+        switch (item.type) {
+          case "diagram-graph":
+            hint =
+              " (provide a detailed textual description of a diagram/graph within the question)";
+            break;
+          case "numerical":
+            hint =
+              " (present a numerical problem with a step‑by‑step solution in the answerHint)";
+            break;
+          case "match-following":
+            hint =
+              " (present two columns of items to match, include the correct pairs in answerHint)";
+            break;
+          case "true-false":
+            hint =
+              " (state whether the statement is true or false, include correct answer in answerHint)";
+            break;
+          case "fill-blanks":
+            hint =
+              " (provide a sentence with missing words, list the missing words in answerHint)";
+            break;
+          default:
+            break;
+        }
+        return `- Section ${String.fromCharCode(65 + idx)}: ${item.type} – ${item.count} questions, ${item.marks} marks each${hint}`;
+      })
       .join("\n")}\n\n`;
   }
 
@@ -117,13 +141,16 @@ Output **only valid JSON** (no markdown, no extra text) following this schema:
 }
 
 **Rules:**
-- You may create 1 to 3 sections. Distribute the ${totalQuestions} questions evenly across sections.
+- - You MUST create EXACTLY one section for each item in the Question Breakdown above. No extra sections are allowed.
 - Each question must have **difficulty** one of: Easy, Medium, Difficult. Use the allowed difficulties: ${allowedDifficulties.join(", ")}.
 - Each question must have **marks** exactly ${marksPerQuestion}.
 - Each question must include an **"answerHint"**. You MUST give 4 options if the question is multiple choice.
 - The **instruction** in each section must mention the marks per question (e.g., "Each question carries ${marksPerQuestion} marks").
 - The **type** field should describe the question style (e.g., "Short Answer Questions", "Long Answer", "Multiple Choice").
 - The **timeAllowed** should be reasonable (e.g., 45 minutes for 20 marks).
+- For **diagram‑graph** questions, include a detailed textual description of the diagram/graph (no image needed).
+- For **numerical** problems, give a complete step‑by‑step solution in the answer hint.
+- For **match‑the‑following** questions, present two lists of items to be matched and give the correct matching pairs in the answer hint.
 - Return ONLY the JSON object, no other text.
 `.trim();
 }
@@ -171,6 +198,12 @@ export async function generatePaperWithFallback(
       const paper = await tryGenerate(model, prompt);
       console.log(`Model ${model} succeeded in ${Date.now() - startedAt}ms`);
 
+      const computedMaxMarks = paper.sections.reduce(
+        (sum, section) =>
+          sum + section.questions.reduce((s, q) => s + q.marks, 0),
+        0,
+      );
+
       // Apply safe defaults only if AI missed these fields (no regex)
       const finalPaper: GeneratedPaper = {
         subject: paper.subject || payload.title,
@@ -182,7 +215,7 @@ export async function generatePaperWithFallback(
             payload.marksPerQuestion || 0,
           ),
         maxMarks:
-          paper.maxMarks ||
+          computedMaxMarks ||
           (payload.totalQuestions || 0) * (payload.marksPerQuestion || 0),
         compulsoryNote:
           paper.compulsoryNote ||

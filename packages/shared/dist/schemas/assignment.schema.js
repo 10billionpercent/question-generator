@@ -9,6 +9,9 @@ exports.questionTypeEnum = zod_1.z.enum([
     "long-answer",
     "true-false",
     "fill-blanks",
+    "diagram-graph",
+    "numerical",
+    "match-following",
 ]);
 exports.questionBreakdownItemSchema = zod_1.z.object({
     type: exports.questionTypeEnum,

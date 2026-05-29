@@ -1,18 +1,18 @@
 import { z } from "zod";
 export declare const difficultyEnum: z.ZodEnum<["easy", "medium", "hard"]>;
 export type Difficulty = z.infer<typeof difficultyEnum>;
-export declare const questionTypeEnum: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>;
+export declare const questionTypeEnum: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks", "diagram-graph", "numerical", "match-following"]>;
 export type QuestionType = z.infer<typeof questionTypeEnum>;
 export declare const questionBreakdownItemSchema: z.ZodObject<{
-    type: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>;
+    type: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks", "diagram-graph", "numerical", "match-following"]>;
     count: z.ZodNumber;
     marks: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
-    type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+    type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
     count: number;
     marks: number;
 }, {
-    type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+    type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
     count: number;
     marks: number;
 }>;
@@ -22,19 +22,19 @@ export declare const assignmentFormSchema: z.ZodObject<{
     title: z.ZodString;
     studyMaterialUrl: z.ZodOptional<z.ZodString>;
     dueDate: z.ZodOptional<z.ZodString>;
-    questionTypes: z.ZodOptional<z.ZodArray<z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>, "many">>;
+    questionTypes: z.ZodOptional<z.ZodArray<z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks", "diagram-graph", "numerical", "match-following"]>, "many">>;
     totalQuestions: z.ZodOptional<z.ZodNumber>;
     marksPerQuestion: z.ZodOptional<z.ZodNumber>;
     questionBreakdown: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        type: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>;
+        type: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks", "diagram-graph", "numerical", "match-following"]>;
         count: z.ZodNumber;
         marks: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }, {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }>, "many">>;
@@ -46,11 +46,11 @@ export declare const assignmentFormSchema: z.ZodObject<{
     institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
-    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[] | undefined;
+    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following")[] | undefined;
     totalQuestions?: number | undefined;
     marksPerQuestion?: number | undefined;
     questionBreakdown?: {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }[] | undefined;
@@ -62,11 +62,11 @@ export declare const assignmentFormSchema: z.ZodObject<{
     institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
-    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[] | undefined;
+    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following")[] | undefined;
     totalQuestions?: number | undefined;
     marksPerQuestion?: number | undefined;
     questionBreakdown?: {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }[] | undefined;
@@ -80,19 +80,19 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     title: z.ZodString;
     studyMaterialUrl: z.ZodOptional<z.ZodString>;
     dueDate: z.ZodOptional<z.ZodString>;
-    questionTypes: z.ZodOptional<z.ZodArray<z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>, "many">>;
+    questionTypes: z.ZodOptional<z.ZodArray<z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks", "diagram-graph", "numerical", "match-following"]>, "many">>;
     totalQuestions: z.ZodOptional<z.ZodNumber>;
     marksPerQuestion: z.ZodOptional<z.ZodNumber>;
     questionBreakdown: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        type: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks"]>;
+        type: z.ZodEnum<["mcq", "short-answer", "long-answer", "true-false", "fill-blanks", "diagram-graph", "numerical", "match-following"]>;
         count: z.ZodNumber;
         marks: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }, {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }>, "many">>;
@@ -108,11 +108,11 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
-    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[] | undefined;
+    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following")[] | undefined;
     totalQuestions?: number | undefined;
     marksPerQuestion?: number | undefined;
     questionBreakdown?: {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }[] | undefined;
@@ -127,11 +127,11 @@ export declare const generationJobPayloadSchema: z.ZodObject<{
     institutionName?: string | undefined;
     studyMaterialUrl?: string | undefined;
     dueDate?: string | undefined;
-    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks")[] | undefined;
+    questionTypes?: ("mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following")[] | undefined;
     totalQuestions?: number | undefined;
     marksPerQuestion?: number | undefined;
     questionBreakdown?: {
-        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks";
+        type: "mcq" | "short-answer" | "long-answer" | "true-false" | "fill-blanks" | "diagram-graph" | "numerical" | "match-following";
         count: number;
         marks: number;
     }[] | undefined;

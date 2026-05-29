@@ -9,6 +9,9 @@ export const questionTypeEnum = z.enum([
   "long-answer",
   "true-false",
   "fill-blanks",
+  "diagram-graph",
+  "numerical",
+  "match-following",
 ]);
 export type QuestionType = z.infer<typeof questionTypeEnum>;
 

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { AssignmentForm, QuestionBreakdownItem } from "@veda/shared"; // import QuestionBreakdownItem
+import { AssignmentForm, QuestionBreakdownItem } from "@veda/shared";
 
 export interface IAssignment extends AssignmentForm, Document {
   status: "pending" | "extracting" | "generating" | "completed" | "failed";
@@ -9,7 +9,7 @@ export interface IAssignment extends AssignmentForm, Document {
   updatedAt: Date;
   userId?: mongoose.Types.ObjectId;
   uploadedContent?: string;
-  questionBreakdown?: QuestionBreakdownItem[]; // use the exact type
+  questionBreakdown?: QuestionBreakdownItem[];
 }
 
 const assignmentSchema = new Schema<IAssignment>(
@@ -35,6 +35,9 @@ const assignmentSchema = new Schema<IAssignment>(
             "long-answer",
             "true-false",
             "fill-blanks",
+            "diagram-graph",
+            "numerical",
+            "match-following",
           ],
         },
         count: Number,
