@@ -36,7 +36,7 @@ export default function MobileHeader() {
           <button className="mh-avatar" aria-label="Profile">
             <img
               src="/avatar.png"
-              alt="John Doe"
+              alt="Hange Zoë"
               onError={(e) => {
                 const t = e.target as HTMLImageElement;
                 t.style.display = "none";

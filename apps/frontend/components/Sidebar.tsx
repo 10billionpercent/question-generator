@@ -135,8 +135,8 @@ export default function Sidebar() {
             />
           </div>
           <div className="school-info">
-            <span className="school-name">Delhi Public School</span>
-            <span className="school-sub">Bokaro Steel City</span>
+            <span className="school-name">Training Corps Academy</span>
+            <span className="school-sub">Shiganshina</span>
           </div>
         </div>
       </aside>

@@ -81,14 +81,14 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
             <div className="topbar-avatar">
               <img
                 src="/avatar.png"
-                alt="John Doe"
+                alt="Hange Zoë"
                 onError={(e) => {
                   const t = e.target as HTMLImageElement;
                   t.style.display = "none";
                 }}
               />
             </div>
-            <span className="topbar-username">John Doe</span>
+            <span className="topbar-username">Hange Zoë</span>
             <svg
               width="16"
               height="16"
