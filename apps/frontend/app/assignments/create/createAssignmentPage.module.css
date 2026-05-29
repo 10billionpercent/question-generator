@@ -157,56 +157,46 @@
   color: var(--text-secondary);
   flex-shrink: 0;
 }
+/* Question section */
 .qt-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
-.qt-header-row {
-  display: grid;
-  grid-template-columns: 1fr 130px 100px;
-  gap: 8px;
-  padding: 0 8px;
-  font-size: 13px;
+.qt-header {
+  font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
-}
-.qt-row {
-  display: grid;
-  grid-template-columns: 1fr 28px 130px 100px;
-  gap: 8px;
-  align-items: center;
-}
-.qt-type-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.qt-type-select {
-  width: 100%;
-  appearance: none;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  padding: 11px 36px 11px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: var(--font);
-  color: var(--text-primary);
-  background: white;
-  cursor: pointer;
-}
-.qt-select-arrow {
-  position: absolute;
-  right: 12px;
   color: var(--text-secondary);
-  pointer-events: none;
+  margin-bottom: 4px;
+}
+
+/* Base (mobile first) – stacked layout */
+.qt-row {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.qt-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.qt-type-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
 }
 .qt-remove-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,49 +207,56 @@
   background: #fee2e2;
   color: #dc2626;
 }
+.qt-controls {
+  display: flex;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+.qt-stepper-group {
+  flex: 1;
+  min-width: 0;
+}
+.qt-stepper-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
 .qt-stepper {
   display: flex;
   align-items: center;
-  gap: 0;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  overflow: hidden;
   background: white;
+  border: 1px solid #ddd;
+  border-radius: 40px;
+  width: fit-content;
+  overflow: hidden;
 }
-.qt-step-btn {
-  width: 34px;
-  height: 40px;
+.qt-stepper button {
+  width: 36px;
+  height: 36px;
   background: transparent;
   border: none;
   font-size: 18px;
-  font-weight: 400;
-  color: var(--text-secondary);
+  font-weight: 500;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.qt-step-btn:hover {
-  background: #f5f5f5;
-}
-.qt-step-val {
-  flex: 1;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 600;
   color: var(--text-primary);
-  border-left: 1px solid #e5e5e5;
-  border-right: 1px solid #e5e5e5;
-  min-width: 28px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+}
+.qt-stepper button:hover {
+  background: #f0f0f0;
+}
+.qt-stepper span {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+  padding: 0 8px;
 }
 .qt-add-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: transparent;
   border: none;
   font-size: 14px;
@@ -267,30 +264,74 @@
   font-family: var(--font);
   color: var(--text-primary);
   cursor: pointer;
-  padding: 4px 0;
+  padding: 8px 0;
   width: fit-content;
 }
 .qt-add-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: var(--text-primary);
   border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 .qt-totals {
   display: flex;
-  justify-content: flex-end;
-  gap: 24px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
   font-size: 14px;
   color: var(--text-secondary);
-  padding-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
 }
 .qt-totals strong {
   color: var(--text-primary);
 }
+.qt-header-row {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .qt-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .qt-row-header {
+    flex: 0 0 auto;
+    width: 320px; /* fixed width for all titles – adjust as needed */
+  }
+  .qt-type-text {
+    width: 100%;
+    word-break: break-word; /* wrap long titles gracefully */
+  }
+  .qt-controls {
+    flex: 0 0 auto;
+    width: 300px; /* fixed width ensures identical stepper area */
+    display: flex;
+    gap: 24px;
+  }
+  .qt-stepper-group {
+    flex: 1;
+  }
+  .qt-remove-btn {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .create-card {
+    padding: 20px 16px;
+    gap: 18px;
+  }
+  /* keep stacked layout (already default) */
+}
+
 .textarea-wrap {
   position: relative;
 }
@@ -433,44 +474,6 @@
   background: white;
   border: 1px solid #ccc;
 }
-@media (max-width: 768px) {
-  .create-card {
-    padding: 20px 16px;
-    gap: 18px;
-  }
-  .qt-header-row {
-    display: none;
-  }
-  .qt-row {
-    grid-template-columns: 1fr 28px;
-    grid-template-rows: auto auto;
-    gap: 8px;
-  }
-  .qt-type-wrap {
-    grid-column: 1;
-  }
-  .qt-remove-btn {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .qt-stepper:first-of-type {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .qt-stepper:last-of-type {
-    grid-column: 2 / span 1;
-    grid-row: 2;
-  }
-  .qt-row::before {
-    content: "No. of Questions";
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    grid-column: 1;
-    grid-row: 2;
-  }
-}
-
 .progress-container {
   width: 100%;
   background-color: #e5e5e5;
@@ -478,7 +481,6 @@
   overflow: hidden;
   margin-bottom: 8px;
 }
-
 .progress-bar-fill {
   height: 8px;
   background-color: var(--color-brand);

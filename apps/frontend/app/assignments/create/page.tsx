@@ -138,16 +138,6 @@ export default function CreateAssignmentPage() {
     setQuestionRows((prev) => prev.filter((r) => r.id !== id));
   }
 
-  function updateRow(
-    id: string,
-    field: "type" | "numQuestions" | "marks",
-    value: string | number,
-  ) {
-    setQuestionRows((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
-    );
-  }
-
   function increment(id: string, field: "numQuestions" | "marks") {
     setQuestionRows((prev) =>
       prev.map((r) => (r.id === id ? { ...r, [field]: r[field] + 1 } : r)),
@@ -438,36 +428,51 @@ export default function CreateAssignmentPage() {
 
           {/* Question Types table */}
           <div className={styles["qt-section"]}>
-            <div className={styles["qt-header-row"]}>
-              <span className={styles["qt-col-type"]}>Question Type</span>
-              <span className={styles["qt-col-num"]}>No. of Questions</span>
-              <span className={styles["qt-col-marks"]}>Marks</span>
+            <div className={styles["qt-header"]}>
+              <span>Question Type</span>
             </div>
             {questionRows.map((row) => (
               <div key={row.id} className={styles["qt-row"]}>
-                <div className={styles["qt-type-wrap"]}>
-                  <select
-                    className={styles["qt-type-select"]}
-                    value={row.type}
-                    onChange={(e) => updateRow(row.id, "type", e.target.value)}
-                  >
-                    {QUESTION_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className={styles["qt-select-arrow"]}
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                <div className={styles["qt-row-header"]}>
+                  <p className={styles["qt-type-text"]}>{row.type}</p>
+                </div>
+                <div className={styles["qt-controls"]}>
+                  <div className={styles["qt-stepper-group"]}>
+                    <label>No. of Questions</label>
+                    <div className={styles["qt-stepper"]}>
+                      <button
+                        type="button"
+                        onClick={() => decrement(row.id, "numQuestions")}
+                      >
+                        −
+                      </button>
+                      <span>{row.numQuestions}</span>
+                      <button
+                        type="button"
+                        onClick={() => increment(row.id, "numQuestions")}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles["qt-stepper-group"]}>
+                    <label>Marks</label>
+                    <div className={styles["qt-stepper"]}>
+                      <button
+                        type="button"
+                        onClick={() => decrement(row.id, "marks")}
+                      >
+                        −
+                      </button>
+                      <span>{row.marks}</span>
+                      <button
+                        type="button"
+                        onClick={() => increment(row.id, "marks")}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <button
                   className={styles["qt-remove-btn"]}
@@ -486,42 +491,6 @@ export default function CreateAssignmentPage() {
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
-                <div className={styles["qt-stepper"]}>
-                  <button
-                    type="button"
-                    className={styles["qt-step-btn"]}
-                    onClick={() => decrement(row.id, "numQuestions")}
-                  >
-                    −
-                  </button>
-                  <span className={styles["qt-step-val"]}>
-                    {row.numQuestions}
-                  </span>
-                  <button
-                    type="button"
-                    className={styles["qt-step-btn"]}
-                    onClick={() => increment(row.id, "numQuestions")}
-                  >
-                    +
-                  </button>
-                </div>
-                <div className={styles["qt-stepper"]}>
-                  <button
-                    type="button"
-                    className={styles["qt-step-btn"]}
-                    onClick={() => decrement(row.id, "marks")}
-                  >
-                    −
-                  </button>
-                  <span className={styles["qt-step-val"]}>{row.marks}</span>
-                  <button
-                    type="button"
-                    className={styles["qt-step-btn"]}
-                    onClick={() => increment(row.id, "marks")}
-                  >
-                    +
-                  </button>
-                </div>
               </div>
             ))}
             <button className={styles["qt-add-btn"]} onClick={addRow}>
