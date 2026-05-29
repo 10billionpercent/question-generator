@@ -284,7 +284,6 @@ function CreatedAssignmentContent() {
               onClick={handleDownload}
               disabled={pdfGenerating}
             >
-              {pdfGenerating ? "Generating PDF..." : "Download as PDF"}
               <svg
                 width="16"
                 height="16"
@@ -297,13 +296,13 @@ function CreatedAssignmentContent() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
+              {pdfGenerating ? "Generating PDF..." : "Download as PDF"}
             </button>
             <button
               className="download-btn regenerate-btn"
               onClick={handleRegenerate}
               disabled={regenerating}
             >
-              {regenerating ? "Regenerating..." : "Regenerate"}
               <svg
                 width="16"
                 height="16"
@@ -317,6 +316,7 @@ function CreatedAssignmentContent() {
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
                 <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" />
               </svg>
+              {regenerating ? "Regenerating..." : "Regenerate"}
             </button>
           </div>
         </div>
@@ -398,15 +398,13 @@ function CreatedAssignmentContent() {
 
       <style>{`
         .home-page { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
-        .ai-banner { background: #111111; border-radius: 16px 16px 0 0; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
-        .ai-banner-text { color: white; font-size: 15px; font-weight: 400; line-height: 1.6; }
+        .ai-banner { border-radius: 16px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; border: 1px solid color-mix(in srgb, var(--color-brand) 50%, transparent); margin-top: 10px; margin-bottom: 10px; }
+        .ai-banner-text { font-size: 15px; font-weight: 400; line-height: 1.6; }
         .button-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        .download-btn { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--text-primary); border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.12s; }
+        .download-btn { background-color: var(--color-brand); width: fit-content; display: inline-flex; align-items: center; gap: 8px; color: white; border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.12s; }
         .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .download-btn:hover:not(:disabled) { background: #f0f0f0; }
-        .regenerate-btn { background: #2a2a2a; color: white; }
-        .regenerate-btn:hover:not(:disabled) { background: #3a3a3a; }
-        .paper-preview { font-family: var(--paper-font); background: white; border-radius: 0 0 16px 16px; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
+        .regenerate-btn { color: #2a2a2a; background: white; border: 1px solid #2a2a2a; }
+        .paper-preview { border-radius: 20px; font-family: var(--paper-font); background: white; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
         .paper-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #111; padding-bottom: 16px; }
         .paper-institution { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
         .paper-subject, .paper-class { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
