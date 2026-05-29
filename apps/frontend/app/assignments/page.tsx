@@ -45,7 +45,6 @@ function AssignmentCard({ assignment }: { assignment: Assignment }) {
           href={`/assignments/created?paperId=${assignment.id}`}
           className={styles.title}
         >
-          {" "}
           {assignment.title}
         </Link>
         <div className={styles.menuWrap} ref={menuRef}>
@@ -204,7 +203,7 @@ export default function AssignmentsPage() {
                   criteria, and let AI assist with grading.
                 </p>
                 <Link href="/assignments/create" className={styles.emptyCta}>
-                  <Sparkles size={20} fill="currentColor" />
+                  <Sparkles size={20} />
                   Create Your First Assignment
                 </Link>
               </>
@@ -222,6 +221,17 @@ export default function AssignmentsPage() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Mobile inline Create button – visible only on mobile */}
+            <div className={styles.mobileCreateInline}>
+              <Link
+                href="/assignments/create"
+                className={styles.mobileCreateBtnInline}
+              >
+                <Sparkles size={20} />
+                Create Assignment
+              </Link>
             </div>
 
             <div className={styles.toolbar}>
@@ -273,6 +283,7 @@ export default function AssignmentsPage() {
         )}
       </div>
 
+      {/* Desktop FAB and bottom bar (hidden on mobile via CSS) */}
       {hasAssignments && (
         <>
           <Link
@@ -289,7 +300,10 @@ export default function AssignmentsPage() {
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-            ></svg>
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </Link>
 
           <div className={styles.mobileCreateBar}>
@@ -304,7 +318,8 @@ export default function AssignmentsPage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <Sparkles size={20} fill="currentColor" />
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               Create Assignment
             </Link>

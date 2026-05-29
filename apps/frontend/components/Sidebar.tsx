@@ -77,7 +77,7 @@ export default function Sidebar() {
 
         {/* Create Assignment CTA */}
         <Link href="/assignments/create" className="create-btn">
-          <Sparkles size={20} fill="currentColor" />
+          <Sparkles size={20} />
           Create Assignment
         </Link>
 
