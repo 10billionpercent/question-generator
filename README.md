@@ -238,6 +238,13 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 
 ## Running Locally
 
+Start Redis server:
+
+```bash
+wsl
+sudo service redis-server start
+```
+
 Start the API server and worker together:
 
 ```bash
