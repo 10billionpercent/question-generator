@@ -3,48 +3,24 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import TopBar from "@/components/TopBar";
+import { Sparkles } from "lucide-react";
 
-// Mock data — replace with real API calls
-const MOCK_ASSIGNMENTS = [
-  {
-    id: "1",
-    title: "Quiz on Electricity",
-    assignedOn: "20-06-2025",
-    due: "21-06-2025",
-  },
-  {
-    id: "2",
-    title: "Quiz on Electricity",
-    assignedOn: "20-06-2025",
-    due: "21-06-2025",
-  },
-  {
-    id: "3",
-    title: "Quiz on Electricity",
-    assignedOn: "20-06-2025",
-    due: "21-06-2025",
-  },
-  {
-    id: "4",
-    title: "Quiz on Electricity",
-    assignedOn: "20-06-2025",
-    due: "21-06-2025",
-  },
-  {
-    id: "5",
-    title: "Quiz on Electricity",
-    assignedOn: "20-06-2025",
-    due: "21-06-2025",
-  },
-  {
-    id: "6",
-    title: "Quiz on Electricity",
-    assignedOn: "20-06-2025",
-    due: "21-06-2025",
-  },
-];
+type Assignment = {
+  id: string;
+  title: string;
+  assignedOn: string;
+  due?: string;
+};
 
-type Assignment = (typeof MOCK_ASSIGNMENTS)[number];
+// Helper to format date
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
 
 function AssignmentCard({ assignment }: { assignment: Assignment }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -83,17 +59,13 @@ function AssignmentCard({ assignment }: { assignment: Assignment }) {
             <div className="asgn-dropdown">
               <button
                 className="asgn-dropdown-item"
-                onClick={() => {
-                  setMenuOpen(false);
-                }}
+                onClick={() => setMenuOpen(false)}
               >
                 View Assignment
               </button>
               <button
                 className="asgn-dropdown-item asgn-dropdown-delete"
-                onClick={() => {
-                  setMenuOpen(false);
-                }}
+                onClick={() => setMenuOpen(false)}
               >
                 Delete
               </button>
@@ -118,51 +90,85 @@ function AssignmentCard({ assignment }: { assignment: Assignment }) {
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="empty-state">
-      <div className="empty-illustration">
-        {/* Use public/no-assignments.png — place it in /public */}
-        <img
-          src="/no-assignments.png"
-          alt="No assignments"
-          className="empty-img"
-        />
-      </div>
-      <h2 className="empty-title">No assignments yet</h2>
-      <p className="empty-desc">
-        Create your first assignment to start collecting and grading student
-        submissions. You can set up rubrics, define marking criteria, and let AI
-        assist with grading.
-      </p>
-      <Link href="/assignments/create" className="empty-cta">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        Create Your First Assignment
-      </Link>
-    </div>
-  );
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function AssignmentsPage() {
   const [search, setSearch] = useState("");
-  // Toggle to false to see empty state
-  const hasAssignments = MOCK_ASSIGNMENTS.length > 0;
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const filtered = MOCK_ASSIGNMENTS.filter((a) =>
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setIsLoggedIn(false);
+          setAssignments([]);
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          // Token invalid or expired
+          localStorage.removeItem("token");
+          setIsLoggedIn(false);
+          setAssignments([]);
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        // Expected structure: { user: {...}, assignments: [...] }
+        const apiAssignments = data.assignments || [];
+
+        // Map to our Assignment type
+        const mapped: Assignment[] = apiAssignments.map((item: Assignment) => ({
+          id: item.id,
+          title: item.title,
+          assignedOn: formatDate(item.assignedOn),
+          // due: item.due ? formatDate(item.due) : undefined, // API doesn't provide due yet
+        }));
+
+        setIsLoggedIn(true);
+        setAssignments(mapped);
+      } catch (err) {
+        console.error("Failed to fetch assignments", err);
+        setIsLoggedIn(false);
+        setAssignments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const hasAssignments = assignments.length > 0;
+  const filtered = assignments.filter((a) =>
     a.title.toLowerCase().includes(search.toLowerCase()),
   );
+
+  if (loading) {
+    return (
+      <>
+        <TopBar title="Assignment" />
+        <div className="loading-spinner">Loading your assignments...</div>
+        <style>{`
+          .loading-spinner {
+            text-align: center;
+            padding: 80px 20px;
+            font-size: 16px;
+            color: var(--text-secondary);
+          }
+        `}</style>
+      </>
+    );
+  }
 
   return (
     <>
@@ -170,10 +176,56 @@ export default function AssignmentsPage() {
 
       <div className="asgn-page">
         {!hasAssignments ? (
-          <EmptyState />
+          // Empty state: same image, conditional text below
+          <div className="empty-state">
+            <div className="empty-illustration">
+              <img
+                src="/no-assignments.png"
+                alt="No assignments"
+                className="empty-img"
+              />
+            </div>
+            {!isLoggedIn ? (
+              <>
+                <h2 className="empty-title">
+                  Please sign in to view your assignments
+                </h2>
+                <Link href="/auth/login" className="empty-cta">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                    <polyline points="10 17 15 12 10 7" />
+                    <line x1="15" y1="12" x2="3" y2="12" />
+                  </svg>
+                  Sign In
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="empty-title">No assignments yet</h2>
+                <p className="empty-desc">
+                  Create your first assignment to start collecting and grading
+                  student submissions. You can set up rubrics, define marking
+                  criteria, and let AI assist with grading.
+                </p>
+                <Link href="/assignments/create" className="empty-cta">
+                  <Sparkles size={18} />
+                  Create Your First Assignment
+                </Link>
+              </>
+            )}
+          </div>
         ) : (
+          // Normal view with assignments
           <>
-            {/* Page heading */}
             <div className="asgn-heading">
               <div className="asgn-heading-left">
                 <span className="asgn-status-dot" />
@@ -186,7 +238,6 @@ export default function AssignmentsPage() {
               </div>
             </div>
 
-            {/* Filter + Search row */}
             <div className="asgn-toolbar">
               <button className="asgn-filter-btn">
                 <svg
@@ -227,7 +278,6 @@ export default function AssignmentsPage() {
               </div>
             </div>
 
-            {/* Cards grid */}
             <div className="asgn-grid">
               {filtered.map((a) => (
                 <AssignmentCard key={a.id} assignment={a} />
@@ -237,46 +287,49 @@ export default function AssignmentsPage() {
         )}
       </div>
 
-      {/* Mobile FAB */}
-      <Link
-        href="/assignments/create"
-        className="mobile-fab"
-        aria-label="Create Assignment"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </Link>
-
-      {/* Mobile create bar */}
-      <div className="mobile-create-bar">
-        <Link href="/assignments/create" className="mobile-create-btn">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {/* Mobile FAB & bar - only when assignments exist */}
+      {hasAssignments && (
+        <>
+          <Link
+            href="/assignments/create"
+            className="mobile-fab"
+            aria-label="Create Assignment"
           >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Create Assignment
-        </Link>
-      </div>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </Link>
+
+          <div className="mobile-create-bar">
+            <Link href="/assignments/create" className="mobile-create-btn">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Create Assignment
+            </Link>
+          </div>
+        </>
+      )}
 
       <style>{`
         .asgn-page {
@@ -292,7 +345,7 @@ export default function AssignmentsPage() {
           align-items: center;
           justify-content: center;
           text-align: center;
-          padding: 80px 24px;
+          padding: 40px 24px;
           gap: 16px;
         }
 
@@ -326,7 +379,7 @@ export default function AssignmentsPage() {
         }
 
         .empty-cta {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           gap: 8px;
           background: var(--text-primary);
@@ -598,11 +651,9 @@ export default function AssignmentsPage() {
           .asgn-grid {
             grid-template-columns: 1fr;
           }
-
           .asgn-toolbar {
             flex-direction: row;
           }
-
           .mobile-create-bar {
             display: block;
           }
