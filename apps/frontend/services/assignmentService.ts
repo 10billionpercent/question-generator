@@ -1,7 +1,8 @@
+// services/assignmentService.ts
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export interface QuestionBreakdownItem {
-  type: string; // e.g., "mcq", "short-answer"
+  type: string;
   count: number;
   marks: number;
 }
@@ -12,7 +13,7 @@ export interface AssignmentFormData {
   institutionName?: string;
   questionBreakdown: QuestionBreakdownItem[];
   additionalInstructions?: string;
-  dueDate?: string; // ISO datetime
+  dueDate?: string;
   difficultyPreference?: "easy" | "medium" | "hard";
 }
 
@@ -22,22 +23,20 @@ export interface UploadResponse {
   assignmentId: string;
 }
 
-/**
- * Create an assignment with an uploaded file (PDF / text).
- * Sends multipart/form-data matching the curl example:
- * - file
- * - title
- * - classLevel
- * - institutionName
- * - questionBreakdown[0][type]=mcq
- * - questionBreakdown[0][count]=3
- * - questionBreakdown[0][marks]=1
- * - etc.
- */
+// Helper to get token
+function getToken(): string | null {
+  return localStorage.getItem("token");
+}
+
 export async function createAssignmentWithFile(
   formData: AssignmentFormData,
   file: File,
 ): Promise<UploadResponse> {
+  const token = getToken();
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
+
   const fd = new FormData();
 
   // Basic fields
@@ -51,7 +50,7 @@ export async function createAssignmentWithFile(
   if (formData.difficultyPreference)
     fd.append("difficultyPreference", formData.difficultyPreference);
 
-  // Question breakdown – send as array of objects with indexed fields
+  // Question breakdown
   formData.questionBreakdown.forEach((item, idx) => {
     fd.append(`questionBreakdown[${idx}][type]`, item.type);
     fd.append(`questionBreakdown[${idx}][count]`, String(item.count));
@@ -62,6 +61,9 @@ export async function createAssignmentWithFile(
 
   const res = await fetch(`${API_BASE}/api/generation/upload`, {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`, // ✅ Add the token!
+    },
     body: fd,
   });
 
@@ -76,9 +78,15 @@ export async function createAssignmentWithFile(
 export async function generatePDF(
   paperId: string,
 ): Promise<{ message: string; jobId: string }> {
+  const token = getToken();
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}/api/papers/${paperId}/pdf`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Unknown error" }));

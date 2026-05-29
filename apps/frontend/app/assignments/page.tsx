@@ -41,7 +41,11 @@ function AssignmentCard({ assignment }: { assignment: Assignment }) {
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <Link href={`/assignments/${assignment.id}`} className={styles.title}>
+        <Link
+          href={`/assignments/created?paperId=${assignment.id}`}
+          className={styles.title}
+        >
+          {" "}
           {assignment.title}
         </Link>
         <div className={styles.menuWrap} ref={menuRef}>
