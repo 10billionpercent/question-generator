@@ -85,7 +85,7 @@ export default function MobileNav() {
           bottom: 0;
           left: 0;
           right: 0;
-          border: 1px solid var(--color-brand);
+          border: 1px solid color-mix(in srgb, var(--color-brand) 50%, transparent);
           background-color: var(--main-bg);
           padding: 10px;
           z-index: 100;

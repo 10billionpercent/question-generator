@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   LayoutGrid,
@@ -9,7 +9,6 @@ import {
   FileText,
   Box,
   Library,
-  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -44,7 +43,6 @@ const navItems = [
 
 export default function Sidebar() {
   const router = useRouter();
-  const pathname = usePathname();
   const [activeLabel, setActiveLabel] = useState<string>("Home");
 
   // Load saved active nav item from localStorage on mount
@@ -105,18 +103,6 @@ export default function Sidebar() {
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
-
-        {/* Settings */}
-        <Link
-          href="/settings"
-          className={`nav-item ${pathname === "/settings" ? "active" : ""}`}
-          style={{ marginBottom: 16 }}
-        >
-          <span className="nav-icon">
-            <Settings size={20} />
-          </span>
-          <span className="nav-label">Settings</span>
-        </Link>
 
         {/* School profile */}
         <div className="school-profile">

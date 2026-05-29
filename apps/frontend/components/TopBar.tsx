@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { removeToken } from "@/services/authService";
 
 interface TopBarProps {
   title: string;
@@ -9,14 +11,42 @@ interface TopBarProps {
 
 export default function TopBar({ title, showBack = true }: TopBarProps) {
   const router = useRouter();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
+
+  const handleLogout = () => {
+    removeToken();
+    router.push("/auth/login");
+  };
+
+  const handleSettings = () => {
+    router.push("/settings");
+  };
 
   return (
     <>
       <div className="topbar">
         <div className="topbar-left">
+          {/* Desktop left side */}
           {showBack && (
             <button
-              className="topbar-back"
+              className="topbar-back desktop-only"
               onClick={() => router.back()}
               aria-label="Go back"
             >
@@ -36,7 +66,7 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
             </button>
           )}
 
-          <div className="topbar-grid-icon">
+          <div className="topbar-grid-icon desktop-only">
             <svg
               width="16"
               height="16"
@@ -54,7 +84,15 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
             </svg>
           </div>
 
-          <span className="topbar-title">{title}</span>
+          <span className="topbar-title desktop-only">{title}</span>
+
+          {/* Mobile left side – logo and text */}
+          <div className="mobile-logo">
+            <div className="mobile-logo-icon">
+              <img src="/logo.png" alt="VedaAI" />
+            </div>
+            <span className="mobile-logo-text">VedaAI</span>
+          </div>
         </div>
 
         <div className="topbar-right">
@@ -77,31 +115,84 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
             </div>
           </button>
 
-          <button className="topbar-user">
-            <div className="topbar-avatar">
-              <img
-                src="/avatar.png"
-                alt="Hange Zoë"
-                onError={(e) => {
-                  const t = e.target as HTMLImageElement;
-                  t.style.display = "none";
-                }}
-              />
-            </div>
-            <span className="topbar-username">Hange Zoë</span>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {/* User button with avatar, username (hidden on mobile), chevron, and dropdown */}
+          <div className="topbar-user-wrapper" ref={dropdownRef}>
+            <button
+              className="topbar-user"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
             >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
+              <div className="topbar-avatar">
+                <img
+                  src="/avatar.png"
+                  alt="Hange Zoë"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.style.display = "none";
+                  }}
+                />
+              </div>
+              <span className="topbar-username">Hange Zoë</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`chevron ${dropdownOpen ? "rotated" : ""}`}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {dropdownOpen && (
+              <div className="topbar-dropdown">
+                <button
+                  className="topbar-dropdown-item"
+                  onClick={handleSettings}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="dropdown-icon"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  Settings
+                </button>
+                <button
+                  className="topbar-dropdown-item topbar-dropdown-danger"
+                  onClick={handleLogout}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="dropdown-icon"
+                  >
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -157,6 +248,38 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
           color: var(--text-secondary);
         }
 
+        /* Mobile logo – hidden on desktop */
+        .mobile-logo {
+          display: none;
+          align-items: center;
+          gap: 8px;
+        }
+        .mobile-logo-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+        }
+        .mobile-logo-icon img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .mobile-logo-text {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: -0.3px;
+        }
+
+        /* Desktop-only elements */
+        .desktop-only {
+          display: flex;
+        }
+
         .topbar-right {
           display: flex;
           align-items: center;
@@ -185,6 +308,10 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
           background: var(--color-brand);
           border-radius: 50%;
           border: 1.5px solid var(--main-bg);
+        }
+
+        .topbar-user-wrapper {
+          position: relative;
         }
 
         .topbar-user {
@@ -226,9 +353,74 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
           font-weight: 600;
         }
 
+        .chevron {
+          transition: transform 0.2s ease;
+        }
+
+        .chevron.rotated {
+          transform: rotate(180deg);
+        }
+
+        /* Dropdown menu */
+        .topbar-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          background: white;
+          border: 1px solid #e5e5e5;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          min-width: 180px;
+          z-index: 50;
+          overflow: hidden;
+        }
+
+        .topbar-dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          text-align: left;
+          padding: 12px 16px;
+          background: transparent;
+          border: none;
+          font-size: 14px;
+          font-weight: 500;
+          font-family: var(--font);
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: background 0.1s;
+        }
+
+        .topbar-dropdown-item:hover {
+          background: #f5f5f5;
+        }
+
+        .dropdown-icon {
+          flex-shrink: 0;
+          color: currentColor;
+        }
+
+        .topbar-dropdown-danger {
+          color: #e53e3e;
+        }
+
+        /* Responsive: on mobile, hide desktop left elements, show mobile logo */
         @media (max-width: 768px) {
           .topbar {
+            padding: 12px 16px;
+          }
+          .desktop-only {
             display: none;
+          }
+          .mobile-logo {
+            display: flex;
+          }
+          .topbar-username {
+            display: none;
+          }
+          .topbar-user {
+            padding: 4px;
           }
         }
       `}</style>

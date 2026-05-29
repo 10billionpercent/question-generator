@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
-import MobileHeader from "@/components/MobileHeader";
 import MobileNav from "@/components/MobileNav";
 
 export const metadata: Metadata = {
@@ -31,8 +30,6 @@ export default function RootLayout({
           <Sidebar />
 
           <div className="main-wrapper">
-            {/* Mobile top header */}
-            <MobileHeader />
 
             {/* Page content */}
             <main className="main-content">{children}</main>
