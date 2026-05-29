@@ -113,19 +113,19 @@ export default function Sidebar() {
       </aside>
 
       <style>{`
-        /* Your existing CSS stays exactly the same */
         .sidebar {
           width: var(--sidebar-width);
           min-height: 100vh;
           background: var(--sidebar-bg);
-          border-right: 1px solid #ebebeb;
           display: flex;
           flex-direction: column;
           padding: 24px 20px;
           flex-shrink: 0;
-          position: sticky;
           top: 0;
-          height: 100vh;
+          position: sticky;
+          margin: 16px;
+          border-radius: 16px;
+          max-height: 90vh;
           overflow-y: auto;
         }
         .sidebar-logo {
@@ -201,11 +201,11 @@ export default function Sidebar() {
           font-family: inherit;
         }
         .nav-item:hover {
-          background: #f5f5f5;
+          background: color-mix(in srgb, var(--color-brand) 20%, transparent);
           color: var(--text-primary);
         }
         .nav-item.active {
-          background: #f0f0f0;
+          background: color-mix(in srgb, var(--color-brand) 20%, transparent);
           color: var(--text-primary);
         }
         .nav-icon {
@@ -234,7 +234,7 @@ export default function Sidebar() {
           display: flex;
           align-items: center;
           gap: 12px;
-          background: #f7f7f7;
+          background: var(--background-gray);
           border-radius: 14px;
           padding: 12px 14px;
           margin-top: 4px;
@@ -258,6 +258,7 @@ export default function Sidebar() {
         .school-info {
           display: flex;
           flex-direction: column;
+          background-color:
           gap: 2px;
         }
         .school-name {
@@ -268,7 +269,7 @@ export default function Sidebar() {
         }
         .school-sub {
           font-size: 12px;
-          color: var(--text-secondary);
+          color: var(--text-tertiary);
         }
         @media (max-width: 768px) {
           .sidebar {

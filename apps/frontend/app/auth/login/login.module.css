@@ -7,7 +7,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid color-mix(in srgb, var(--color-brand) 50%, transparent);
   border-radius: 24px;
   padding: 40px 32px;
@@ -32,7 +32,7 @@
 .title {
   font-size: 28px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-primary);
   letter-spacing: -0.5px;
   margin-bottom: 8px;
 }
@@ -40,7 +40,7 @@
 .subtitle {
   font-size: 18px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin-bottom: 28px;
 }
 
@@ -53,23 +53,23 @@
 .input {
   width: 100%;
   padding: 14px 16px;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--background-white);
+  border: 1px solid var(--border-medium);
   border-radius: 12px;
   font-size: 15px;
   font-family: inherit;
-  color: #1a1a1a;
+  color: var(--text-primary);
   transition: border 0.2s;
 }
 
 .input:focus {
   outline: none;
-  border-color: #e8470a;
+  border-color: var(--color-brand);
 }
 
 .input::placeholder {
-  color: #1a1a1a;
-  opacity: 0.9;
+  color: var(--text-primary);
+  opacity: 0.7;
 }
 
 .error {
@@ -100,13 +100,13 @@
 .toggle {
   margin-top: 20px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .toggle button {
   background: none;
   border: none;
-  color: #e8470a;
+  color: var(--color-brand);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
@@ -122,6 +122,7 @@
   padding: 12px;
   font-size: 15px;
   font-weight: 500;
+  color: var(--text-primary);
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;

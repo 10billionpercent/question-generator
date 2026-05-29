@@ -7,7 +7,9 @@ import { io, Socket } from "socket.io-client";
 import TopBar from "@/components/TopBar";
 import { Star } from "lucide-react";
 import { generatePDF } from "@/services/assignmentService";
+import styles from "./createdAssignment.module.css";
 
+// Interfaces unchanged
 interface QuestionOption {
   label: string;
   text: string;
@@ -224,7 +226,6 @@ function CreatedAssignmentContent() {
       }
       console.log("Regeneration started");
       alert("Regeneration started. The new version will appear shortly.");
-      // Reload after a short delay to show the updated paper
       setTimeout(() => window.location.reload(), 2000);
     } catch (err) {
       console.error(err);
@@ -240,15 +241,10 @@ function CreatedAssignmentContent() {
     return (
       <>
         <TopBar title="Create New" showBack={false} />
-        <div className="loading-container">
-          <div className="spinner"></div>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
           <p>Loading your assignment...</p>
         </div>
-        <style>{`
-          .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
-          .spinner { width: 40px; height: 40px; border: 4px solid #e5e5e5; border-top-color: var(--color-brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
       </>
     );
   }
@@ -257,14 +253,10 @@ function CreatedAssignmentContent() {
     return (
       <>
         <TopBar title="Create New" showBack={false} />
-        <div className="error-container">
+        <div className={styles.errorContainer}>
           <p>❌ {error || "Paper not found"}</p>
           <button onClick={() => router.push("/")}>Go to Dashboard</button>
         </div>
-        <style>{`
-          .error-container { text-align: center; padding: 60px 20px; }
-          button { margin-top: 20px; padding: 10px 24px; background: var(--text-primary); color: white; border: none; border-radius: 40px; cursor: pointer; }
-        `}</style>
       </>
     );
   }
@@ -275,12 +267,12 @@ function CreatedAssignmentContent() {
     <>
       <TopBar title="Create New" showBack={false} />
 
-      <div className="home-page">
-        <div className="ai-banner">
-          <p className="ai-banner-text">{aiMessage}</p>
-          <div className="button-group">
+      <div className={styles.homePage}>
+        <div className={styles.aiBanner}>
+          <p className={styles.aiBannerText}>{aiMessage}</p>
+          <div className={styles.buttonGroup}>
             <button
-              className="download-btn"
+              className={styles.downloadBtn}
               onClick={handleDownload}
               disabled={pdfGenerating}
             >
@@ -299,7 +291,7 @@ function CreatedAssignmentContent() {
               {pdfGenerating ? "Generating PDF..." : "Download as PDF"}
             </button>
             <button
-              className="download-btn regenerate-btn"
+              className={`${styles.downloadBtn} ${styles.regenerateBtn}`}
               onClick={handleRegenerate}
               disabled={regenerating}
             >
@@ -321,54 +313,62 @@ function CreatedAssignmentContent() {
           </div>
         </div>
 
-        <div className="paper-preview">
-          <div className="paper-header">
-            <h1 className="paper-institution">
+        <div className={styles.paperPreview}>
+          <div className={styles.paperHeader}>
+            <h1 className={styles.paperInstitution}>
               {paper.institutionName || "VedaAI Institute"}
             </h1>
-            <p className="paper-subject">Subject: {paper.subject}</p>
-            <p className="paper-class">Class: {paper.classLevel}</p>
+            <p className={styles.paperSubject}>Subject: {paper.subject}</p>
+            <p className={styles.paperClass}>Class: {paper.classLevel}</p>
           </div>
 
-          <div className="paper-meta-row">
-            <span className="paper-time">
+          <div className={styles.paperMetaRow}>
+            <span className={styles.paperTime}>
               Time Allowed: {paper.timeAllowed}
             </span>
-            <span className="paper-marks">Maximum Marks: {paper.maxMarks}</span>
+            <span className={styles.paperMarks}>
+              Maximum Marks: {paper.maxMarks}
+            </span>
           </div>
 
-          <p className="paper-note">{paper.compulsoryNote}</p>
+          <p className={styles.paperNote}>{paper.compulsoryNote}</p>
 
-          <div className="paper-student-info">
+          <div className={styles.paperStudentInfo}>
             <p>
-              Name: <span className="paper-blank">______________________</span>
+              Name:{" "}
+              <span className={styles.paperBlank}>______________________</span>
             </p>
             <p>
-              Roll Number: <span className="paper-blank">________________</span>
+              Roll Number:{" "}
+              <span className={styles.paperBlank}>________________</span>
             </p>
             <p>
               Class: {paper.classLevel} Section:{" "}
-              <span className="paper-blank">__________</span>
+              <span className={styles.paperBlank}>__________</span>
             </p>
           </div>
 
           {paper.sections.map((section, idx) => (
-            <div key={idx} className="paper-section">
-              <h2 className="paper-section-name">{section.title}</h2>
-              <p className="paper-section-type">{section.type}</p>
-              <p className="paper-section-instruction">{section.instruction}</p>
-              <ol className="paper-questions">
+            <div key={idx} className={styles.paperSection}>
+              <h2 className={styles.paperSectionName}>{section.title}</h2>
+              <p className={styles.paperSectionType}>{section.type}</p>
+              <p className={styles.paperSectionInstruction}>
+                {section.instruction}
+              </p>
+              <ol className={styles.paperQuestions}>
                 {section.questions.map((q, qIdx) => (
-                  <li key={qIdx} className="paper-question">
-                    <span className="paper-difficulty">
+                  <li key={qIdx} className={styles.paperQuestion}>
+                    <span className={styles.paperDifficulty}>
                       {renderDifficultyStars(q.difficulty)}
                     </span>{" "}
                     {q.text}{" "}
-                    <span className="paper-qmarks">[{q.marks} Marks]</span>
+                    <span className={styles.paperQmarks}>
+                      [{q.marks} Marks]
+                    </span>
                     {q.options && q.options.length > 0 && (
-                      <div className="paper-options">
+                      <div className={styles.paperOptions}>
                         {q.options.map((opt, optIdx) => (
-                          <div key={optIdx} className="paper-option">
+                          <div key={optIdx} className={styles.paperOption}>
                             {opt.label}) {opt.text}
                           </div>
                         ))}
@@ -379,14 +379,14 @@ function CreatedAssignmentContent() {
               </ol>
             </div>
           ))}
-          <p className="paper-end">End of Question Paper</p>
+          <p className={styles.paperEnd}>End of Question Paper</p>
 
-          <div className="paper-answer-key">
-            <h3 className="paper-ak-title">Answer Key:</h3>
-            <ol className="paper-answers">
+          <div className={styles.paperAnswerKey}>
+            <h3 className={styles.paperAkTitle}>Answer Key:</h3>
+            <ol className={styles.paperAnswers}>
               {paper.sections.flatMap((section) =>
                 section.questions.map((q, idx) => (
-                  <li key={idx} className="paper-answer">
+                  <li key={idx} className={styles.paperAnswer}>
                     {q.answerHint || "No hint provided"}
                   </li>
                 )),
@@ -395,45 +395,6 @@ function CreatedAssignmentContent() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        .home-page { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
-        .ai-banner { border-radius: 16px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; border: 1px solid color-mix(in srgb, var(--color-brand) 50%, transparent); margin-top: 10px; margin-bottom: 10px; }
-        .ai-banner-text { font-size: 15px; font-weight: 400; line-height: 1.6; }
-        .button-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        .download-btn { background-color: var(--color-brand); width: fit-content; display: inline-flex; align-items: center; gap: 8px; color: white; border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.12s; }
-        .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .regenerate-btn { color: #2a2a2a; background: white; border: 1px solid #2a2a2a; }
-        .paper-preview { border-radius: 20px; font-family: var(--paper-font); background: white; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
-        .paper-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #111; padding-bottom: 16px; }
-        .paper-institution { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
-        .paper-subject, .paper-class { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-top: 4px; }
-        .paper-meta-row { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; font-size: 14px; font-weight: 500; color: var(--text-primary); }
-        .paper-note { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; }
-        .paper-student-info { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; font-size: 14px; color: var(--text-primary); font-weight: 500; }
-        .paper-blank { font-weight: 400; color: var(--text-primary); }
-        .paper-section { margin-bottom: 24px; }
-        .paper-section-name { font-size: 18px; font-weight: 700; text-align: center; color: var(--text-primary); margin-bottom: 4px; }
-        .paper-section-type { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
-        .paper-section-instruction { font-size: 13px; font-style: italic; color: var(--text-secondary); margin-bottom: 14px; }
-        .paper-questions { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .paper-question { font-size: 14px; color: var(--text-primary); line-height: 1.6; margin-bottom: 12px; }
-        .paper-difficulty { color: var(--color-brand); font-weight: 700; font-size: 13px; letter-spacing: 1px; }
-        .paper-qmarks { color: var(--text-secondary); font-size: 13px; }
-        .paper-options { margin-top: 4px; margin-left: 20px; font-size: 13px; }
-        .paper-option { margin-bottom: 2px; }
-        .paper-end { font-size: 14px; font-weight: 700; text-align: left; color: var(--text-primary); margin-top: 20px; padding-top: 16px; }
-        .paper-answer-key { margin-top: 24px; padding-top: 20px; }
-        .paper-ak-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
-        .paper-answers { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .paper-answer { font-size: 13px; line-height: 1.7; }
-        @media (max-width: 768px) {
-          .ai-banner { border-radius: 12px 12px 0 0; padding: 16px 18px; }
-          .paper-preview { padding: 20px 18px; }
-          .paper-meta-row { flex-direction: column; align-items: flex-start; gap: 4px; }
-          .button-group { flex-direction: column; }
-        }
-      `}</style>
     </>
   );
 }
@@ -442,15 +403,10 @@ function LoadingFallback() {
   return (
     <>
       <TopBar title="Create New" showBack={false} />
-      <div className="loading-container">
-        <div className="spinner"></div>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
         <p>Loading your assignment...</p>
       </div>
-      <style>{`
-        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #e5e5e5; border-top-color: var(--color-brand); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </>
   );
 }

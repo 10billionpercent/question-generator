@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { removeToken } from "@/services/authService";
 import { useUserStore } from "@/stores/userStore";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface TopBarProps {
   title: string;
@@ -101,6 +102,7 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
         </div>
 
         <div className="topbar-right">
+          <ThemeToggle />
           <button className="topbar-icon-btn" aria-label="Notifications">
             <div style={{ position: "relative", display: "flex" }}>
               <svg
@@ -187,7 +189,7 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
 
       <style>{`
         /* Your existing styles – unchanged */
-        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; background: var(--main-bg); border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; z-index: 40; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; background: var(--main-bg); border-bottom: 1px solid var(--background-gray); position: sticky; top: 0; z-index: 40; }
         .topbar-left { display: flex; align-items: center; gap: 10px; }
         .topbar-back { width: 32px; height: 32px; background: transparent; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: background 0.12s; }
         .topbar-back:hover { background: #e8e8e8; }
@@ -203,13 +205,13 @@ export default function TopBar({ title, showBack = true }: TopBarProps) {
         .topbar-dot { position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--color-brand); border-radius: 50%; border: 1.5px solid var(--main-bg); }
         .topbar-user-wrapper { position: relative; }
         .topbar-user { display: flex; align-items: center; gap: 8px; background: transparent; border: none; cursor: pointer; color: var(--text-primary); font-size: 15px; font-weight: 600; font-family: var(--font); padding: 6px 10px; border-radius: 10px; transition: background 0.12s; }
-        .topbar-user:hover { background: #e8e8e8; }
+        .topbar-user:hover { background: var(--background-gray); }
         .topbar-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ddd; overflow: hidden; }
         .topbar-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .topbar-username { font-size: 15px; font-weight: 600; }
         .chevron { transition: transform 0.2s ease; }
         .chevron.rotated { transform: rotate(180deg); }
-        .topbar-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: white; border: 1px solid #e5e5e5; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); min-width: 180px; z-index: 50; overflow: hidden; }
+        .topbar-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--background-white); border: 1px solid var(--background-gray); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); min-width: 180px; z-index: 50; overflow: hidden; }
         .topbar-dropdown-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 16px; background: transparent; border: none; font-size: 14px; font-weight: 500; font-family: var(--font); color: var(--text-primary); cursor: pointer; transition: background 0.1s; }
         .topbar-dropdown-item:hover { background: #f5f5f5; }
         .dropdown-icon { flex-shrink: 0; color: currentColor; }

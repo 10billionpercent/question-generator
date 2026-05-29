@@ -102,6 +102,7 @@ export default function MobileNav() {
           flex: 1;
           padding: 6px;
           background: none;
+          color: var(--text-tertiary);
           border: none;
           cursor: pointer;
           transition: color 0.15s;
