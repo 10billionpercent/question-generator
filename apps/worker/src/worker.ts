@@ -16,6 +16,7 @@ import {
 import { generatePdf } from "./services/pdf-generator";
 import { extractText } from "./services/extract-text";
 import { addGenerationJob } from "./queues/generation.queue";
+import { AssignmentModel } from "./models/assignment.model";
 
 const connection = { url: config.redisUri };
 
@@ -70,6 +71,9 @@ async function startWorkers() {
               upload.mimetype,
               upload.originalName,
             );
+            await AssignmentModel.findByIdAndUpdate(assignmentId, {
+              uploadedContent,
+            });
           } else {
             if (!file) throw new Error("No file provided for extraction");
             uploadedContent = await extractText(
@@ -77,6 +81,9 @@ async function startWorkers() {
               file.mimetype,
               file.originalName,
             );
+            await AssignmentModel.findByIdAndUpdate(assignmentId, {
+              uploadedContent,
+            });
           }
 
           await emitProgress(job.id!, 10, assignmentId);

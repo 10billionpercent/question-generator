@@ -82,8 +82,10 @@ function CreatedAssignmentContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
+  // Fetch paper data
   useEffect(() => {
     if (!paperId) {
       setError("No paper ID provided");
@@ -119,6 +121,7 @@ function CreatedAssignmentContent() {
     fetchPaper();
   }, [paperId]);
 
+  // Socket for PDF generation updates
   useEffect(() => {
     if (!paperId || loading) return;
 
@@ -199,6 +202,40 @@ function CreatedAssignmentContent() {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!paperId) return;
+    setRegenerating(true);
+    try {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await fetch(
+        `${API_BASE}/api/assignments/${paperId}/regenerate`,
+        {
+          method: "POST",
+          headers,
+        },
+      );
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Regeneration failed");
+      }
+      console.log("Regeneration started");
+      alert("Regeneration started. The new version will appear shortly.");
+      // Reload after a short delay to show the updated paper
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (err) {
+      console.error(err);
+      const message =
+        err instanceof Error ? err.message : "Failed to start regeneration";
+      alert(message);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -241,25 +278,47 @@ function CreatedAssignmentContent() {
       <div className="home-page">
         <div className="ai-banner">
           <p className="ai-banner-text">{aiMessage}</p>
-          <button
-            className="download-btn"
-            onClick={handleDownload}
-            disabled={pdfGenerating}
-          >
-            {pdfGenerating ? "Generating PDF..." : "Download as PDF"}
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
+          <div className="button-group">
+            <button
+              className="download-btn"
+              onClick={handleDownload}
+              disabled={pdfGenerating}
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </button>
+              {pdfGenerating ? "Generating PDF..." : "Download as PDF"}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            <button
+              className="download-btn regenerate-btn"
+              onClick={handleRegenerate}
+              disabled={regenerating}
+            >
+              {regenerating ? "Regenerating..." : "Regenerate"}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path d="M23 4v6h-6" />
+                <path d="M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10" />
+                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="paper-preview">
@@ -341,9 +400,12 @@ function CreatedAssignmentContent() {
         .home-page { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
         .ai-banner { background: #111111; border-radius: 16px 16px 0 0; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
         .ai-banner-text { color: white; font-size: 15px; font-weight: 400; line-height: 1.6; }
-        .download-btn { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--text-primary); border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; align-self: flex-start; transition: background 0.12s; }
+        .button-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .download-btn { display: inline-flex; align-items: center; gap: 8px; background: white; color: var(--text-primary); border: none; border-radius: 50px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.12s; }
         .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .download-btn:hover:not(:disabled) { background: #f0f0f0; }
+        .regenerate-btn { background: #2a2a2a; color: white; }
+        .regenerate-btn:hover:not(:disabled) { background: #3a3a3a; }
         .paper-preview { font-family: var(--paper-font); background: white; border-radius: 0 0 16px 16px; border: 1px solid #e5e5e5; border-top: none; padding: 36px 40px; }
         .paper-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #111; padding-bottom: 16px; }
         .paper-institution { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
@@ -371,6 +433,7 @@ function CreatedAssignmentContent() {
           .ai-banner { border-radius: 12px 12px 0 0; padding: 16px 18px; }
           .paper-preview { padding: 20px 18px; }
           .paper-meta-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+          .button-group { flex-direction: column; }
         }
       `}</style>
     </>

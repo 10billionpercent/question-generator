@@ -9,6 +9,7 @@ import { generationRouter } from "./routes/generation.routes";
 import { paperRouter } from "./routes/paper.routes";
 import { uploadRouter } from "./routes/upload.routes";
 import { authRouter } from "./routes/auth.routes";
+import { assignmentRouter } from "./routes/assignment.routes";
 import { optionalAuth } from "./middleware/auth";
 import path from "path";
 import { initRedisSubscriber } from "./socket/redis-subscriber";
@@ -28,6 +29,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/generation", optionalAuth, generationRouter);
 app.use("/api/generation", optionalAuth, uploadRouter);
 app.use("/api/papers", paperRouter);
+app.use("/api/assignments", optionalAuth, assignmentRouter);
 
 // Health check
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
