@@ -178,7 +178,7 @@ export default function AssignmentsPage() {
             {!isLoggedIn ? (
               <>
                 <h2 className={styles.emptyTitle}>
-                  Please sign in to view your assignments
+                  Please log in to view your assignments
                 </h2>
                 <Link href="/auth/login" className={styles.emptyCta}>
                   <svg
@@ -195,7 +195,7 @@ export default function AssignmentsPage() {
                     <polyline points="10 17 15 12 10 7" />
                     <line x1="15" y1="12" x2="3" y2="12" />
                   </svg>
-                  Sign In
+                  Log In
                 </Link>
               </>
             ) : (
