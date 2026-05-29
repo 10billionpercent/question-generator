@@ -10,6 +10,7 @@ import {
   AssignmentFormData,
 } from "@/services/assignmentService";
 import { GeneratedPaper } from "@veda/shared";
+import { useUserStore } from "@/stores/userStore";
 import styles from "./createAssignmentPage.module.css";
 
 // Socket event types
@@ -85,6 +86,11 @@ type GenerationStatus =
 export default function CreateAssignmentPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useUserStore(); // get user data for institution name
+
+  // Form states
+  const [assignmentTitle, setAssignmentTitle] = useState("");
+  const [classLevel, setClassLevel] = useState("");
 
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -177,9 +183,9 @@ export default function CreateAssignmentPage() {
     }));
 
     const formPayload: AssignmentFormData = {
-      title: "Assessment", // TODO: add title input field
-      classLevel: "General", // TODO: make this dynamic
-      institutionName: "VedaAI",
+      title: assignmentTitle.trim() || "Untitled Assignment",
+      classLevel: classLevel.trim() || "General",
+      institutionName: user?.institutionName || "VedaAI",
       questionBreakdown,
       additionalInstructions: additionalInfo || undefined,
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
@@ -318,6 +324,30 @@ export default function CreateAssignmentPage() {
           <p className={styles["section-sub"]}>
             Basic information about your assignment
           </p>
+
+          {/* Title input */}
+          <div className={styles["field-group"]}>
+            <label className={styles["field-label"]}>Assignment Title</label>
+            <input
+              type="text"
+              className={styles["text-input"]}
+              placeholder="e.g., Cloud Computing Quiz"
+              value={assignmentTitle}
+              onChange={(e) => setAssignmentTitle(e.target.value)}
+            />
+          </div>
+
+          {/* Class Level input */}
+          <div className={styles["field-group"]}>
+            <label className={styles["field-label"]}>Class / Level</label>
+            <input
+              type="text"
+              className={styles["text-input"]}
+              placeholder="e.g., BE 6th Sem, Grade 10, etc."
+              value={classLevel}
+              onChange={(e) => setClassLevel(e.target.value)}
+            />
+          </div>
 
           {/* File Upload */}
           <div

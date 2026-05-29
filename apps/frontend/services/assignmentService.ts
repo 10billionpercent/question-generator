@@ -23,7 +23,6 @@ export interface UploadResponse {
   assignmentId: string;
 }
 
-// Helper to get token
 function getToken(): string | null {
   return localStorage.getItem("token");
 }
@@ -33,10 +32,6 @@ export async function createAssignmentWithFile(
   file: File,
 ): Promise<UploadResponse> {
   const token = getToken();
-  if (!token) {
-    throw new Error("No authentication token found. Please log in.");
-  }
-
   const fd = new FormData();
 
   // Basic fields
@@ -59,11 +54,14 @@ export async function createAssignmentWithFile(
 
   fd.append("file", file);
 
+  const headers: HeadersInit = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}/api/generation/upload`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`, // ✅ Add the token!
-    },
+    headers,
     body: fd,
   });
 

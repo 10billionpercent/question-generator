@@ -126,6 +126,21 @@
   color: var(--text-secondary);
   font-size: 13px;
 }
+
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: var(--font);
+  background: white;
+  transition: border 0.2s;
+}
+.text-input:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
 .date-input-wrap {
   display: flex;
   align-items: center;
