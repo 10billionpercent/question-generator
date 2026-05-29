@@ -340,14 +340,41 @@
 }
 
 /* Mobile adjustments */
+/* Mobile adjustments */
 @media (max-width: 768px) {
   .create-card {
     padding: 20px 16px;
     gap: 18px;
   }
 
+  /* Reorder question row: header + remove button on top row, controls below */
+  .qt-row {
+    display: grid;
+    grid-template-areas:
+      "header remove"
+      "controls controls";
+    gap: 12px;
+    align-items: center;
+  }
+
+  .qt-row-header {
+    grid-area: header;
+    margin: 0;
+  }
+
+  .qt-remove-btn {
+    grid-area: remove;
+    justify-self: end; /* pushes button to the right */
+    margin-left: 0; /* override any desktop margin */
+  }
+
+  .qt-controls {
+    grid-area: controls;
+  }
+
+  /* Adjust text width if needed */
   .qt-type-text {
-    width: 80%;
+    width: auto;
     word-break: break-word;
   }
 }
