@@ -99,7 +99,19 @@ function CreatedAssignmentContent() {
   const [error, setError] = useState("");
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+
+  // Helper to show error message in banner (red)
+  const showError = (msg: string) => {
+    setBannerMessage(msg);
+    setIsError(true);
+    setTimeout(() => {
+      setBannerMessage(null);
+      setIsError(false);
+    }, 3000);
+  };
 
   // Fetch paper data
   useEffect(() => {
@@ -155,11 +167,16 @@ function CreatedAssignmentContent() {
 
     socket.on("generation_started", (data: GenerationStartedEvent) => {
       console.log("🚀 generation_started:", data);
+      setBannerMessage("Regeneration in progress...");
+      setIsError(false);
     });
 
     socket.on("generation_progress", (data: GenerationProgressEvent) => {
       console.log("📊 generation_progress:", data);
+      setBannerMessage(`Regeneration in progress: ${data.progress}%`);
+      setIsError(false);
     });
+
     socket.on(
       "generation_completed",
       async (data: GenerationCompletedEvent) => {
@@ -178,7 +195,7 @@ function CreatedAssignmentContent() {
         console.error("❌ Generation failed:", data.error);
         setPdfGenerating(false);
         setRegenerating(false);
-        alert("Generation failed. Please try again.");
+        showError(`Regeneration failed: ${data.error}`);
       }
     });
 
@@ -200,7 +217,7 @@ function CreatedAssignmentContent() {
     }
 
     if (pdfGenerating) {
-      alert("PDF is already being generated. Please wait...");
+      showError("PDF is already being generated. Please wait...");
       return;
     }
 
@@ -208,11 +225,14 @@ function CreatedAssignmentContent() {
     try {
       await generatePDF(paperId);
       console.log("PDF generation job started");
+      setBannerMessage("PDF generation started...");
+      setIsError(false);
+      setTimeout(() => setBannerMessage(null), 3000);
     } catch (err: unknown) {
       console.error(err);
       const message =
         err instanceof Error ? err.message : "Failed to start PDF generation";
-      alert(message);
+      showError(message);
       setPdfGenerating(false);
     }
   };
@@ -221,6 +241,10 @@ function CreatedAssignmentContent() {
     if (!paperId) return;
     console.log("🔄 Regenerate started for paperId:", paperId);
     setRegenerating(true);
+    setBannerMessage(
+      "Regeneration started... The page will reload when ready.",
+    );
+    setIsError(false);
     try {
       const token = localStorage.getItem("token");
       const headers: HeadersInit = { "Content-Type": "application/json" };
@@ -239,14 +263,12 @@ function CreatedAssignmentContent() {
       const responseData = await res.json();
       console.log("✅ Regenerate success:", responseData);
       console.log("🆕 New jobId:", responseData.jobId);
-      alert(
-        "Regeneration started. The page will reload automatically when ready.",
-      );
+      // Banner message will be updated by socket events
     } catch (err) {
       console.error("🔥 Regeneration error:", err);
       const message =
         err instanceof Error ? err.message : "Failed to start regeneration";
-      alert(message);
+      showError(message);
       setRegenerating(false);
     }
   };
@@ -275,7 +297,9 @@ function CreatedAssignmentContent() {
     );
   }
 
-  const aiMessage = `Here is your generated question paper for ${paper.subject} (${paper.classLevel}).`;
+  const aiMessage = bannerMessage
+    ? bannerMessage
+    : `Here is your generated question paper for ${paper.subject} (${paper.classLevel}).`;
 
   return (
     <>
@@ -283,7 +307,11 @@ function CreatedAssignmentContent() {
 
       <div className={styles.homePage}>
         <div className={styles.aiBanner}>
-          <p className={styles.aiBannerText}>{aiMessage}</p>
+          <p
+            className={`${styles.aiBannerText} ${isError ? styles.errorText : ""}`}
+          >
+            {aiMessage}
+          </p>
           <div className={styles.buttonGroup}>
             <button
               className={styles.downloadBtn}

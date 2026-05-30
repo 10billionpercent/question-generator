@@ -29,16 +29,17 @@ function formatDate(dateString: string): string {
 function AssignmentCard({
   assignment,
   onDelete,
+  onError,
 }: {
   assignment: Assignment;
   onDelete: (id: string) => void;
+  onError: (message: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -69,7 +70,7 @@ function AssignmentCard({
         err instanceof Error
           ? err.message
           : "Failed to delete assignment. Please try again.";
-      alert(errorMessage);
+      onError(errorMessage);
       setShowConfirm(false);
     } finally {
       setIsDeleting(false);
@@ -166,7 +167,16 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { setCount, decrement } = useAssignmentStore();
+
+  // Auto-clear error message after 3 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -214,7 +224,7 @@ export default function AssignmentsPage() {
 
   const handleDeleteAssignment = (id: string) => {
     setAssignments((prev) => prev.filter((a) => a.id !== id));
-    decrement(); // update store count
+    decrement();
   };
 
   const hasAssignments = assignments.length > 0;
@@ -234,6 +244,19 @@ export default function AssignmentsPage() {
   return (
     <>
       <TopBar title="Assignment" />
+
+      {/* Error notification banner */}
+      {errorMessage && (
+        <div className={styles.errorBanner}>
+          <span>{errorMessage}</span>
+          <button
+            className={styles.errorBannerClose}
+            onClick={() => setErrorMessage(null)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className={styles.page}>
         {!hasAssignments ? (
@@ -354,6 +377,7 @@ export default function AssignmentsPage() {
                   key={a.id}
                   assignment={a}
                   onDelete={handleDeleteAssignment}
+                  onError={setErrorMessage}
                 />
               ))}
             </div>
