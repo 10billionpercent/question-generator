@@ -1,4 +1,5 @@
 node_modules/
 uploads/
 pdfs/
+.pnpm-store
 .env
